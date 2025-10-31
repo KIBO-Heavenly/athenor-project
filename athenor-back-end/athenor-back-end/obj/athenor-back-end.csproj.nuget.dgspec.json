@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\TAMUCC\\Desktop\\Senior Capstone\\athenor-back-end\\athenor-back-end\\athenor-back-end.csproj": {}
+    "C:\\Users\\TAMUCC\\Desktop\\Senior Capstone\\athenor-project\\athenor-back-end\\athenor-back-end\\athenor-back-end.csproj": {}
   },
   "projects": {
-    "C:\\Users\\TAMUCC\\Desktop\\Senior Capstone\\athenor-back-end\\athenor-back-end\\athenor-back-end.csproj": {
+    "C:\\Users\\TAMUCC\\Desktop\\Senior Capstone\\athenor-project\\athenor-back-end\\athenor-back-end\\athenor-back-end.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\TAMUCC\\Desktop\\Senior Capstone\\athenor-back-end\\athenor-back-end\\athenor-back-end.csproj",
+        "projectUniqueName": "C:\\Users\\TAMUCC\\Desktop\\Senior Capstone\\athenor-project\\athenor-back-end\\athenor-back-end\\athenor-back-end.csproj",
         "projectName": "athenor-back-end",
-        "projectPath": "C:\\Users\\TAMUCC\\Desktop\\Senior Capstone\\athenor-back-end\\athenor-back-end\\athenor-back-end.csproj",
+        "projectPath": "C:\\Users\\TAMUCC\\Desktop\\Senior Capstone\\athenor-project\\athenor-back-end\\athenor-back-end\\athenor-back-end.csproj",
         "packagesPath": "C:\\Users\\TAMUCC\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\TAMUCC\\Desktop\\Senior Capstone\\athenor-back-end\\athenor-back-end\\obj\\",
+        "outputPath": "C:\\Users\\TAMUCC\\Desktop\\Senior Capstone\\athenor-project\\athenor-back-end\\athenor-back-end\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
