@@ -1,11 +1,19 @@
-import Login from "./Login"; // make sure the path matches where you put Login.jsx
-import './App.css';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./Login";
+import Register from "./Register";
+import AdminDashboard from "./AdminDashboard";
+import TutorDashboard from "./TutorDashboard";
 
 function App() {
   return (
-    <div>
-      <Login />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/tutor-dashboard" element={<TutorDashboard />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
