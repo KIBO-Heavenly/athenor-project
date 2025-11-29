@@ -1,7 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 //using Microsoft.EntityFrameworkCore.Infrastructure;
 //using Microsoft.EntityFrameworkCore.Migrations;
 using athenor_back_end.Data;
+using athenor_back_end.Models;
+using AthenorBackEnd.Helpers;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,25 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    // admin
+    if (!context.Users.Any(u => u.Email == "Adminathenor@gmail.com"))
+    {
+        context.Users.Add(new User
+        {
+            FullName = "Administrator",
+            Email = "Adminathenor@gmail.com",
+            PasswordHash = PasswordHelper.HashPassword("@thernor2025"),
+            Role = "Admin"
+        });
+
+        context.SaveChanges();
+    }
+}
+
 // Middleware
 if (app.Environment.IsDevelopment())
 {
@@ -28,7 +49,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseCors("AllowReact");
 app.MapControllers();
 app.Run();

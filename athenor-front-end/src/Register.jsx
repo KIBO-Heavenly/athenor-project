@@ -5,7 +5,6 @@ export default function Register() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Tutor"); // default role
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -18,15 +17,20 @@ export default function Register() {
       const response = await fetch("http://localhost:5137/api/Auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, password, role }),
+        body: JSON.stringify({
+          fullName,
+          email,
+          password
+          // role removed → backend forces Tutor
+        }),
       });
 
       const data = await response.json();
       console.log("Registration response:", data);
 
       if (response.ok) {
-        alert("User registered successfully! You can now log in.");
-        navigate("/"); // redirect to login page
+        alert("Tutor registered successfully! You can now log in.");
+        navigate("/"); 
       } else {
         alert(data.message || "Registration failed");
       }
@@ -71,18 +75,13 @@ export default function Register() {
             className="w-full border px-3 py-2 rounded-md"
           />
 
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full border px-3 py-2 rounded-md"
-          >
-            <option value="Tutor">Tutor</option>
-            <option value="Admin">Admin</option>
-          </select>
+          {/* Role removed – backend decides it's Tutor */}
 
           <button
             type="submit"
-            className={`w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+            className={`w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 ${
+              loading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
             disabled={loading}
           >
             {loading ? "Registering..." : "Register"}
