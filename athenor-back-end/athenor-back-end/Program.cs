@@ -1,5 +1,3 @@
-//using Microsoft.EntityFrameworkCore.Infrastructure;
-//using Microsoft.EntityFrameworkCore.Migrations;
 using athenor_back_end.Data;
 using athenor_back_end.Models;
 using AthenorBackEnd.Helpers;
@@ -7,9 +5,15 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services
+// -------------------------------------------------------------
+// Database (InMemory for testing)
+// -------------------------------------------------------------
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseInMemoryDatabase("AthenorDb")); // For testing
+    options.UseInMemoryDatabase("AthenorDb"));
+
+// -------------------------------------------------------------
+// CORS configuration (allow React front-end)
+// -------------------------------------------------------------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact",
@@ -17,17 +21,21 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader()
                         .AllowAnyMethod());
 });
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// -------------------------------------------------------------
+// Seed only the administrator user (no sample tutors)
+// -------------------------------------------------------------
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-    // admin
+    // Create admin only if missing
     if (!context.Users.Any(u => u.Email == "Adminathenor@gmail.com"))
     {
         context.Users.Add(new User
@@ -42,14 +50,21 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Middleware
+// -------------------------------------------------------------
+// Swagger UI
+// -------------------------------------------------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Disabled for local development
+
+// -------------------------------------------------------------
+// Middleware + Controllers
+// -------------------------------------------------------------
 app.UseCors("AllowReact");
 app.MapControllers();
+
 app.Run();
