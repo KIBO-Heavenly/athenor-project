@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDarkMode } from './DarkModeContext';
 import NavBar from './NavBar';
 import { getUserColor } from './colorPalette';
 import { API_URL } from './config';
 
-export default function TutorSchedule() {
+export default function MasterSchedule() {
   const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
   const [schedules, setSchedules] = useState([]);
@@ -14,7 +14,7 @@ export default function TutorSchedule() {
   const [activeSection, setActiveSection] = useState('mathCenter');
 
   const timeSlots = [
-    '10:00 – 10:30 AM', '10:30 – 11:00 AM', '11:00 – 11:30 AM', '11:30 AM – 12:00 PM', '12:00 – 12:30 PM',
+    '10:00 – 10:30 AM', '10:30 – 11:00 AM', '11:00 – 11:30 AM', '11:30 – 12:00 PM', '12:00 – 12:30 PM',
     '12:30 – 1:00 PM', '1:00 – 1:30 PM', '1:30 – 2:00 PM', '2:00 – 2:30 PM', '2:30 – 3:00 PM',
     '3:00 – 3:30 PM', '3:30 – 4:00 PM', '4:00 – 4:30 PM', '4:30 – 5:00 PM', '5:00 – 5:30 PM',
     '5:30 – 6:00 PM', '6:00 – 6:30 PM', '6:30 – 7:00 PM', '7:00 – 7:30 PM'
@@ -86,19 +86,19 @@ export default function TutorSchedule() {
   };
 
   // Build a matrix of time slots x days with assigned OAs for a specific section
-  const getOAForTimeSlot = (day, timeSlot, section) => {
+  const getOAsForTimeSlot = (day, timeSlot, section) => {
     const matching = schedules.filter(
       s => s.dayOfWeek === day && s.timeSlot === timeSlot && s.section === section && s.tutorName
     );
-    return matching.length > 0 ? matching[0].tutorName : null;
+    return matching.map(s => s.tutorName);
   };
 
   if (loading) {
     return (
       <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-        <NavBar title="Weekly Schedule" showBackButton={true} onBackClick={() => navigate('/tutor-dashboard')} />
+        <NavBar title="Master Schedule" showBackButton={true} onBackClick={() => navigate('/admin')} />
         <div className="flex items-center justify-center min-h-[70vh]">
-          <p className={`text-xl animate-pulse-subtle ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Loading schedule...</p>
+          <p className={`text-xl ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Loading schedule...</p>
         </div>
       </div>
     );
@@ -106,14 +106,14 @@ export default function TutorSchedule() {
 
   return (
     <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-      <NavBar title="Weekly Schedule" showBackButton={true} onBackClick={() => navigate('/tutor-dashboard')} />
+      <NavBar title="Master Schedule" showBackButton={true} onBackClick={() => navigate('/admin')} />
 
       <section className="w-full py-8 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className={`text-3xl font-bold animate-slideInDown ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                Weekly Schedule
+                Weekly Master Schedule
               </h1>
               <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 Week of {formatDate(weekDates[0])} - {formatDate(weekDates[4])}, {currentYear}
@@ -200,8 +200,8 @@ export default function TutorSchedule() {
                     {time}
                   </div>
                   {days.map(day => {
-                    const oa = getOAForTimeSlot(day, time, activeSection);
-                    const userColor = oa ? getUserColor(oa) : null;
+                    const tutors = getOAsForTimeSlot(day, time, activeSection);
+                    const hasTutors = tutors.length > 0;
 
                     return (
                       <div
@@ -209,18 +209,29 @@ export default function TutorSchedule() {
                         className={`border-r border-b h-[70px] flex items-center justify-center text-center font-medium text-sm transition ${
                           isDarkMode ? 'border-gray-700' : 'border-gray-300'
                         } ${
-                          oa
-                            ? 'text-white'
+                          hasTutors
+                            ? ''
                             : isDarkMode ? 'bg-gray-800 text-gray-500' : 'bg-gray-50 text-gray-400'
                         }`}
-                        style={{
-                          backgroundColor: oa
-                            ? (isDarkMode ? userColor.dark : userColor.light)
-                            : 'transparent'
-                        }}
                       >
-                        {oa ? (
-                          <div className="truncate px-2 w-full">{oa}</div>
+                        {hasTutors ? (
+                          <div className="w-full px-1 py-1 flex flex-col gap-0.5">
+                            {tutors.map((tutor, idx) => {
+                              const userColor = getUserColor(tutor);
+                              return (
+                                <div
+                                  key={idx}
+                                  className="w-full px-1 py-0.5 rounded text-white text-xs truncate"
+                                  style={{
+                                    backgroundColor: isDarkMode ? userColor.dark : userColor.light
+                                  }}
+                                  title={tutor}
+                                >
+                                  {tutor}
+                                </div>
+                              );
+                            })}
+                          </div>
                         ) : (
                           <div className="text-gray-400">—</div>
                         )}
@@ -230,23 +241,6 @@ export default function TutorSchedule() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Summary */}
-          <div className={`mt-8 p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-            <h2 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              {sections[activeSection]} - Schedule Summary
-            </h2>
-            <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-              Total OAs Assigned: <span className="font-bold">
-                {new Set(schedules.filter(s => s.section === activeSection).map(s => s.tutorName)).size}
-              </span>
-            </p>
-            <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-              Total Time Slots Covered: <span className="font-bold">
-                {schedules.filter(s => s.section === activeSection).length}
-              </span>
-            </p>
           </div>
         </div>
       </section>

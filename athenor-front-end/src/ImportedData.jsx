@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDarkMode } from './DarkModeContext';
+import NavBar from './NavBar';
 
 export default function ImportedData() {
   const location = useLocation();
@@ -8,28 +9,15 @@ export default function ImportedData() {
   const { isDarkMode } = useDarkMode();
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [filters, setFilters] = useState({});
-  const [isMultiSortActive, setIsMultiSortActive] = useState(false);
-  const [multiSortDirection, setMultiSortDirection] = useState('asc');
 
   const data = location.state?.data || [];
   const headers = location.state?.headers || [];
+  const title = location.state?.title || 'Imported Data';
 
   if (data.length === 0) {
     return (
       <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-        <nav className={isDarkMode ? 'w-full border-b bg-gray-800/90 backdrop-blur-xl border-gray-700' : 'w-full border-b bg-gradient-to-r from-blue-600/90 via-cyan-500/90 to-emerald-500/90 backdrop-blur-xl'}>
-          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="text-2xl font-bold tracking-tight text-white">
-              Athenor Admin
-            </div>
-            <button
-              onClick={() => navigate('/admin')}
-              className="px-4 py-2 text-gray-200 hover:text-white transition"
-            >
-              Back to Dashboard
-            </button>
-          </div>
-        </nav>
+        <NavBar title="Imported Data" showBackButton={true} onBackClick={() => navigate('/admin')} />
         <div className="max-w-7xl mx-auto px-6 py-12 text-center">
           <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>No data to display. Please upload a file first.</p>
           <button
@@ -65,17 +53,21 @@ export default function ImportedData() {
     }
   };
 
-  // Handle multi-level sort (Grade first, then GPA)
-  const handleMultiSort = () => {
-    setIsMultiSortActive(!isMultiSortActive);
-    if (!isMultiSortActive) {
-      setMultiSortDirection('asc');
+  // Helper function to check if a filter matches (generic, works for any column)
+  const filterMatches = (cellValue, filterValue) => {
+    if (!filterValue) return true;
+    
+    const cellStr = String(cellValue || '').toLowerCase().trim();
+    const filterStr = filterValue.toLowerCase().trim();
+    
+    // Support comma-separated values (e.g., "A,B" or "A, B")
+    if (filterStr.includes(',')) {
+      const filterOptions = filterStr.split(',').map(opt => opt.trim());
+      return filterOptions.some(opt => cellStr.includes(opt));
     }
-  };
-
-  // Toggle multi-sort direction
-  const toggleMultiSortDirection = () => {
-    setMultiSortDirection(multiSortDirection === 'asc' ? 'desc' : 'asc');
+    
+    // Use substring matching for single values
+    return cellStr.includes(filterStr);
   };
 
   // Apply sorting and filtering
@@ -85,41 +77,38 @@ export default function ImportedData() {
   if (Object.keys(filters).length > 0) {
     sortedData = sortedData.filter(row => {
       return Object.entries(filters).every(([key, filterValue]) => {
-        if (!filterValue) return true;
-        const cellValue = String(row[key] || '').toLowerCase();
-        return cellValue.includes(filterValue.toLowerCase());
+        return filterMatches(row[key], filterValue);
       });
+    });
+    
+    // Priority sort for grade filters (A,B shows A's first, then B's)
+    Object.entries(filters).forEach(([key, filterValue]) => {
+      if (filterValue && filterValue.includes(',')) {
+        const filterOptions = filterValue.toLowerCase().split(',').map(opt => opt.trim());
+        sortedData.sort((a, b) => {
+          const aValue = String(a[key] || '').toLowerCase().trim();
+          const bValue = String(b[key] || '').toLowerCase().trim();
+          
+          // Find which filter option matches (exact or contains)
+          const aIndex = filterOptions.findIndex(opt => aValue === opt || aValue.includes(opt));
+          const bIndex = filterOptions.findIndex(opt => bValue === opt || bValue.includes(opt));
+          
+          // If both match, sort by their position in the filter list
+          if (aIndex !== -1 && bIndex !== -1) {
+            return aIndex - bIndex;
+          }
+          
+          // Items that match come before items that don't
+          if (aIndex !== -1) return -1;
+          if (bIndex !== -1) return 1;
+          return 0;
+        });
+      }
     });
   }
 
-  // Apply sorting
-  if (isMultiSortActive) {
-    // Multi-level sort: Grade first, then GPA
-    sortedData.sort((a, b) => {
-      // Find Grade and GPA columns (case-insensitive)
-      const gradeKey = headers.find(h => h.toLowerCase().includes('grade'));
-      const gpaKey = headers.find(h => h.toLowerCase().includes('gpa'));
-
-      if (!gradeKey) return 0; // If no grade column, don't sort
-
-      // First, sort by Grade
-      const gradeA = String(a[gradeKey] || '');
-      const gradeB = String(b[gradeKey] || '');
-
-      const gradeCompare = multiSortDirection === 'asc'
-        ? gradeA.localeCompare(gradeB)
-        : gradeB.localeCompare(gradeA);
-
-      // If grades are the same, sort by GPA
-      if (gradeCompare === 0 && gpaKey) {
-        const gpaA = parseFloat(a[gpaKey]) || 0;
-        const gpaB = parseFloat(b[gpaKey]) || 0;
-        return multiSortDirection === 'asc' ? gpaB - gpaA : gpaA - gpaB; // Higher GPA wins
-      }
-
-      return gradeCompare;
-    });
-  } else if (sortConfig.key) {
+  // Apply sorting (after filter priority sort)
+  if (sortConfig.key) {
     sortedData.sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
@@ -149,60 +138,75 @@ export default function ImportedData() {
     }));
   };
 
+  const exportToCSV = () => {
+    // Create CSV content
+    const csvRows = [];
+    
+    // Add headers
+    csvRows.push(headers.join(','));
+    
+    // Add data rows
+    sortedData.forEach(row => {
+      const values = headers.map(header => {
+        const value = row[header] || '';
+        // Escape quotes and wrap in quotes if contains comma
+        const escaped = String(value).replace(/"/g, '""');
+        return escaped.includes(',') ? `"${escaped}"` : escaped;
+      });
+      csvRows.push(values.join(','));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${title.replace(/\s+/g, '_')}_export.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
       {/* NAVBAR */}
-      <nav className={isDarkMode ? 'w-full border-b bg-gray-800/90 backdrop-blur-xl border-gray-700' : 'w-full border-b bg-gradient-to-r from-blue-600/90 via-cyan-500/90 to-emerald-500/90 backdrop-blur-xl'}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-2xl font-bold tracking-tight text-white">
-            Athenor Admin
-          </div>
-          <button
-            onClick={() => navigate('/admin')}
-            className="px-4 py-2 text-gray-200 hover:text-white transition font-medium"
-          >
-            Back to Dashboard
-          </button>
-        </div>
-      </nav>
+      <NavBar title="Imported Data" showBackButton={true} onBackClick={() => navigate('/admin')} />
 
       {/* MAIN CONTENT */}
       <section className="w-full py-8 px-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className={isDarkMode ? 'text-3xl font-bold text-white mb-2' : 'text-3xl font-bold text-gray-900 mb-2'}>Imported Data</h1>
-          <p className={isDarkMode ? 'text-gray-400 mb-6' : 'text-gray-600 mb-6'}>Total Records: {sortedData.length}</p>
-
-          {/* SORTING BUTTONS */}
-          <div className="mb-6 flex gap-2 items-center">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className={`${isDarkMode ? 'text-3xl font-bold text-white mb-2' : 'text-3xl font-bold text-gray-900 mb-2'} animate-slideInDown`}>{title}</h1>
+              <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} animate-slideInLeft animate-stagger-1`}>Total Records: {sortedData.length}</p>
+            </div>
             <button
-              onClick={handleMultiSort}
-              className={`px-4 py-2 rounded font-medium transition ${
-                isMultiSortActive
-                  ? isDarkMode ? 'bg-emerald-600 text-white' : 'bg-purple-600 text-white'
-                  : isDarkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              onClick={exportToCSV}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                isDarkMode
+                  ? 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white hover:from-emerald-700 hover:to-cyan-700'
+                  : 'bg-gradient-to-r from-blue-600 via-cyan-600 to-emerald-600 text-white hover:shadow-lg'
               }`}
             >
-              Sort All (Grade + GPA)
+              📥 Export to CSV
             </button>
-            {isMultiSortActive && (
-              <button
-                onClick={toggleMultiSortDirection}
-                className={`px-3 py-2 rounded font-medium hover:opacity-90 transition text-white ${
-                  isDarkMode
-                    ? 'bg-emerald-700'
-                    : 'bg-purple-500'
-                }`}
-              >
-                {multiSortDirection === 'asc' ? 'Ascending' : 'Descending'}
-              </button>
-            )}
+          </div>
+
+          {/* SORTING INFO */}
+          <div className="mb-6 animate-fadeIn animate-stagger-2">
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              💡 Click on any column header to sort by that column
+            </p>
           </div>
 
           {/* FILTERS */}
-          <div className={`mb-6 p-4 rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-cyan-200'}`}>
+          <div className={`mb-6 p-4 rounded-lg border animate-slideInUp animate-stagger-3 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-cyan-200'}`}>
             <h3 className={`text-sm font-semibold mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>Filters</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {headers.slice(0, 6).map(header => (
+              {headers.map(header => (
                 <div key={`filter-${header}`}>
                   <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     {header}
@@ -224,7 +228,7 @@ export default function ImportedData() {
           </div>
 
           {/* DATA TABLE */}
-          <div className={`overflow-x-auto rounded-lg shadow border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-cyan-200'}`}>
+          <div className={`overflow-x-auto rounded-lg shadow border animate-slideInUp animate-stagger-4 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-cyan-200'}`}>
             <table className="w-full border-collapse">
               <thead>
                 <tr className={isDarkMode ? 'bg-gradient-to-r from-emerald-700 to-cyan-700 border-b border-gray-700' : 'bg-gradient-to-r from-blue-600 via-cyan-600 to-emerald-600 border-b border-cyan-200'}>
@@ -232,10 +236,7 @@ export default function ImportedData() {
                     <th
                       key={header}
                       className={`px-6 py-3 text-left text-sm font-semibold cursor-pointer hover:opacity-80 transition text-white`}
-                      onClick={() => {
-                        setIsMultiSortActive(false);
-                        handleSort(header);
-                      }}
+                      onClick={() => handleSort(header)}
                     >
                       <div className="flex items-center gap-2">
                         {header}

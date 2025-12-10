@@ -5,6 +5,12 @@ const DarkModeContext = createContext();
 export const DarkModeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
+    // Default to light mode (false) if no preference is saved
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const [disableEffects, setDisableEffects] = useState(() => {
+    const saved = localStorage.getItem('disableEffects');
     return saved ? JSON.parse(saved) : false;
   });
 
@@ -12,12 +18,20 @@ export const DarkModeProvider = ({ children }) => {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
+  useEffect(() => {
+    localStorage.setItem('disableEffects', JSON.stringify(disableEffects));
+  }, [disableEffects]);
+
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
   };
 
+  const toggleDisableEffects = () => {
+    setDisableEffects(!disableEffects);
+  };
+
   return (
-    <DarkModeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
+    <DarkModeContext.Provider value={{ isDarkMode, toggleDarkMode, disableEffects, toggleDisableEffects }}>
       {children}
     </DarkModeContext.Provider>
   );
