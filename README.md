@@ -1,16 +1,18 @@
-# Athenor - University Tutoring Management System
+# Athenor - Tutoring Management System 📚
 
 <div align="center">
 
 ![Athenor Logo](https://via.placeholder.com/200x200?text=Athenor)
 
-**A comprehensive web-based platform for managing university tutoring services, schedules, and student reviews.**
+**Full-stack web app for managing tutoring services - My senior capstone project!**
 
 [![.NET](https://img.shields.io/badge/.NET-7.0-purple)](https://dotnet.microsoft.com/)
 [![React](https://img.shields.io/badge/React-19.1-blue)](https://reactjs.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-[Features](#features) • [Tech Stack](#tech-stack) • [Installation](#installation) • [Usage](#usage) • [API Documentation](#api-documentation)
+*Built with React, ASP.NET Core, and way too much coffee ☕*
+
+[Features](#features) • [Tech Stack](#tech-stack) • [Installation](#installation) • [Usage](#usage) • [Live Demo](#-contact)
 
 </div>
 
@@ -18,7 +20,9 @@
 
 ## 📋 Overview
 
-Athenor is a full-stack tutoring management system developed as a senior capstone project. The platform was designed to streamline tutor scheduling, student reviews, availability management, and administrative oversight for university tutoring services. Currently deployed and in use at Texas A&M University - Corpus Christi (TAMUCC).
+Athenor is a full-stack tutoring management system I built as my senior capstone project. Think of it as a one-stop shop for managing tutors, schedules, reviews, and all that fun stuff universities need. Built it to potentially help out TAMUCC's tutoring center, but honestly, it's mainly here as a portfolio piece to show off what I can build! 🚀
+
+It's got authentication, scheduling with conflict detection, anonymous reviews, email notifications, and even imports schedules from Word docs (because who wants to type everything manually?).
 
 ### Key Capabilities
 
@@ -260,11 +264,13 @@ npm run test
 
 ## 📌 About This Project
 
-This is a **senior capstone project** developed by students and currently deployed at Texas A&M University - Corpus Christi for their tutoring services. The application is owned and maintained by the development team.
+This is my **senior capstone project** - basically the final boss of my Computer Science degree at TAMUCC! 🎓
 
-The repository is public as a portfolio piece to demonstrate full-stack development skills. While the code is open source under MIT License, this is an active production system and not accepting public contributions.
+I built this as a fully functional web app that could help manage tutoring services. TAMUCC's tutoring center might use it, might not - either way, it's a real working system that I'm proud to show off.
 
-**Usage Rights:** TAMUCC has permission to use this system for their tutoring services. Others interested in similar functionality are welcome to reference the architecture and implementation patterns under the terms of the MIT License.
+**Why is this public?** Portfolio, baby! Employers can see I can actually build stuff. Feel free to browse the code, learn from it, or use it as inspiration for your own projects. Just a heads up though - I'm not accepting pull requests since this is my personal portfolio piece.
+
+**The Legal Stuff:** Yeah, there's an MIT License on here. That basically means "use it however you want, just don't blame me if something breaks." It's the most chill license in the open source world.
 
 ---
 
@@ -282,11 +288,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Texas A&M University - Corpus Christi Department of Computer Science
-- TAMUCC Tutoring Services (deployment partner)
-- Senior Capstone Project Team - Fall 2024/Spring 2025
+- **TAMUCC Computer Science Department** - Thanks for the education and the capstone requirement that made me build this!
+- **My Capstone Team** - Fall 2024/Spring 2025 crew
+- **TAMUCC Tutoring Services** - For being potential users and giving me a real-world problem to solve
+- **Coffee** - The real MVP ☕
 
-**Note:** This project is independently owned by the development team. TAMUCC is a deployment partner with permission to use the system.
+**Note:** I own this project, but TAMUCC's tutoring center is welcome to use it if they want!
 
 ---
 
