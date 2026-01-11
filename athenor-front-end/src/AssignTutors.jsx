@@ -99,14 +99,70 @@ export default function AssignTutors() {
       }
     }
 
-    // Load archived weeks from localStorage
+    // Load archived weeks from localStorage or initialize with dummy data
     const savedArchives = localStorage.getItem('archivedWeeks');
+    let shouldInitialize = false;
+    
     if (savedArchives) {
       try {
-        setArchivedWeeks(JSON.parse(savedArchives));
+        const parsed = JSON.parse(savedArchives);
+        // Check if it's empty or invalid
+        if (!parsed || !Array.isArray(parsed) || parsed.length === 0) {
+          shouldInitialize = true;
+        } else {
+          setArchivedWeeks(parsed);
+        }
       } catch (err) {
         console.error('Error loading archived weeks:', err);
+        shouldInitialize = true;
       }
+    } else {
+      shouldInitialize = true;
+    }
+    
+    if (shouldInitialize) {
+      // Initialize with dummy data for the week prior (excluding John Doe)
+      const dummyUsers = ['Antonio', 'Marcelo', 'Randy'];
+      const dummyArchives = [];
+      
+      // Create week prior to this one
+      const weekOffset = 1;
+      const today = new Date();
+      const pastMonday = new Date(today);
+      const currentDay = today.getDay();
+      const diff = currentDay === 0 ? -6 : 1 - currentDay;
+      pastMonday.setDate(today.getDate() + diff - (weekOffset * 7));
+      
+      const weekDates = [];
+      for (let i = 0; i < 5; i++) {
+        const date = new Date(pastMonday);
+        date.setDate(pastMonday.getDate() + i);
+        weekDates.push(date);
+      }
+      
+      const formatArchiveDate = (date) => {
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${monthNames[date.getMonth()]} ${date.getDate()}`;
+      };
+      
+      // Generate random hours for each user (10-19 hours)
+      const tutorHours = {};
+      dummyUsers.forEach(user => {
+        tutorHours[user] = Math.floor(Math.random() * 10) + 10;
+      });
+      
+      dummyArchives.push({
+        id: Date.now() - (weekOffset * 1000000),
+        startDate: formatArchiveDate(weekDates[0]),
+        endDate: formatArchiveDate(weekDates[4]),
+        year: weekDates[0].getFullYear(),
+        assignments: { mathCenter: {}, tutoringCommons: {}, writingCenter: {} },
+        tutorHours: tutorHours,
+        timestamp: new Date(pastMonday).toISOString()
+      });
+      
+      setArchivedWeeks(dummyArchives);
+      localStorage.setItem('archivedWeeks', JSON.stringify(dummyArchives));
     }
     
     // Load OA availability data from localStorage
@@ -848,73 +904,37 @@ export default function AssignTutors() {
               </div>
 
               <div className="p-6 overflow-y-auto max-h-[calc(80vh-140px)]">
-                {archivedWeeks.length === 0 ? (
-                  <p className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    No archived weeks yet. Click "Archive This Week" to save the current schedule.
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {[...archivedWeeks].reverse().map((archive) => (
-                      <div
-                        key={archive.id}
-                        className={`rounded-lg border p-4 ${
-                          isDarkMode ? 'bg-gray-750 border-gray-700' : 'bg-gray-50 border-gray-200'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h4 className={`font-bold text-lg ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                              Week of {archive.startDate} - {archive.endDate}, {archive.year}
-                            </h4>
-                            <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                              Archived: {new Date(archive.timestamp).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => {
-                              const updated = archivedWeeks.filter(a => a.id !== archive.id);
-                              setArchivedWeeks(updated);
-                              localStorage.setItem('archivedWeeks', JSON.stringify(updated));
-                            }}
-                            className={`px-3 py-1 rounded text-sm ${
-                              isDarkMode
-                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                          >
-                            Delete
-                          </button>
-                        </div>
-
-                        {/* Tutor Hours Summary */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                          {Object.entries(archive.tutorHours)
-                            .sort((a, b) => b[1] - a[1])
-                            .map(([tutorName, hours]) => {
-                              const tutorColor = getTutorColor(tutorName);
-                              const isWarning = hours > 19;
-                              return (
-                                <div
-                                  key={tutorName}
-                                  className={`p-2 rounded text-xs ${
-                                    isWarning ? 'ring-2 ring-red-500' : ''
-                                  }`}
-                                  style={{
-                                    backgroundColor: isDarkMode ? tutorColor.dark : tutorColor.light
-                                  }}
-                                >
-                                  <div className="text-white font-medium truncate" title={tutorName}>
-                                    {tutorName}
-                                  </div>
-                                  <div className="text-white font-bold">{hours}h</div>
-                                </div>
-                              );
-                            })}
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[...archivedWeeks].reverse().map((archive) => (
+                    <button
+                      key={archive.id}
+                      className={`p-6 rounded-lg border transition-all duration-300 transform hover:scale-105 text-left ${
+                        isDarkMode
+                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600'
+                          : 'bg-white border-gray-300 hover:shadow-lg'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-2xl">📅</span>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {Object.keys(archive.tutorHours).length} tutors
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <h4 className={`font-bold text-lg mb-1 ${
+                        isDarkMode ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        Week of: {archive.startDate} - {archive.endDate}, {archive.year}
+                      </h4>
+                      <p className={`text-xs ${
+                        isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Total Hours: {Object.values(archive.tutorHours).reduce((sum, h) => sum + h, 0)}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>

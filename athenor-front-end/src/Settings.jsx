@@ -9,7 +9,7 @@ import femaleProfilePic from './assets/athenor-female-pfp.jpg';
 export default function Settings() {
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode, disableEffects, toggleDisableEffects } = useDarkMode();
-  const [profilePicture, setProfilePicture] = useState('');
+  const [profilePicture, setProfilePicture] = useState(maleProfilePic); // Default profile picture
   const [pendingProfilePicture, setPendingProfilePicture] = useState('');
   const [hasUnsavedPicture, setHasUnsavedPicture] = useState(false);
   const [savingPicture, setSavingPicture] = useState(false);
@@ -17,7 +17,8 @@ export default function Settings() {
   const [optOutReviews, setOptOutReviews] = useState(false);
   const [userId, setUserId] = useState(null);
 
-  useEffect(() => {
+  // Function to load user data
+  const loadUserData = () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.id) {
       setUserId(user.id);
@@ -32,11 +33,33 @@ export default function Settings() {
         setProfilePicture(femaleProfilePic);
       } else if (user.profilePicture.startsWith('data:')) {
         setProfilePicture(user.profilePicture);
+      } else {
+        setProfilePicture(maleProfilePic);
       }
+    } else {
+      // Set default profile picture if none exists
+      setProfilePicture(maleProfilePic);
     }
-    if (user.optOutReviews) {
+    if (typeof user.optOutReviews === 'boolean') {
       setOptOutReviews(user.optOutReviews);
     }
+  };
+
+  useEffect(() => {
+    loadUserData();
+    
+    // Listen for storage changes (real-time sync across tabs)
+    const handleStorageChange = (e) => {
+      if (e.key === 'user') {
+        loadUserData();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const handleProfilePictureUpload = (e) => {
@@ -55,29 +78,38 @@ export default function Settings() {
     if (!pendingProfilePicture) return;
     
     setSavingPicture(true);
+    const pictureToSave = pendingProfilePicture;
+    
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       
-      // Update localStorage (since we use auto-login, save locally)
-      user.profilePicture = pendingProfilePicture;
+      // Update localStorage first
+      user.profilePicture = pictureToSave;
       localStorage.setItem('user', JSON.stringify(user));
       
       // Update state
-      setProfilePicture(pendingProfilePicture);
+      setProfilePicture(pictureToSave);
       setPendingProfilePicture('');
       setHasUnsavedPicture(false);
       
-      // Try to save to backend if user exists in database
-      if (user.id && user.id !== 1) {
-        try {
-          await fetch(`${API_URL}/api/Users/${user.id}/profile-picture`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ profilePicture: pendingProfilePicture })
-          });
-        } catch (backendErr) {
-          console.log('Backend save skipped (auto-login user)');
-        }
+      // Trigger storage event for other components to detect change
+      window.dispatchEvent(new Event('storage'));
+      
+      // Try to save to backend (don't block on this)
+      if (user.id) {
+        fetch(`${API_URL}/api/Users/${user.id}/profile-picture`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profilePicture: pictureToSave })
+        })
+        .then(response => {
+          if (response.ok) {
+            console.log('Profile picture saved to backend successfully');
+          } else {
+            console.log('Backend save failed, but local save succeeded');
+          }
+        })
+        .catch(err => console.log('Backend save error:', err));
       }
     } catch (err) {
       console.error('Failed to save profile picture:', err);
@@ -130,24 +162,22 @@ export default function Settings() {
             </h2>
             
             <div className="flex items-center gap-6">
-              {(pendingProfilePicture || profilePicture) && (
-                <div className="relative">
-                  <img 
-                    src={pendingProfilePicture || profilePicture} 
-                    alt="Profile" 
-                    className={`w-24 h-24 rounded-full object-cover border-2 ${
-                      hasUnsavedPicture 
-                        ? 'border-amber-500 ring-2 ring-amber-500/50' 
-                        : 'border-gray-400'
-                    }`}
-                  />
-                  {hasUnsavedPicture && (
-                    <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
-                      New
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="relative">
+                <img 
+                  src={pendingProfilePicture || profilePicture} 
+                  alt="Profile" 
+                  className={`w-24 h-24 rounded-full object-cover border-2 ${
+                    hasUnsavedPicture 
+                      ? 'border-amber-500 ring-2 ring-amber-500/50' 
+                      : 'border-gray-400'
+                  }`}
+                />
+                {hasUnsavedPicture && (
+                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    New
+                  </span>
+                )}
+              </div>
               
               <div className="flex flex-col gap-3">
                 <div className="flex gap-3">

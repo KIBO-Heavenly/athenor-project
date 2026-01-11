@@ -7,10 +7,11 @@ import femaleProfilePic from './assets/athenor-female-pfp.jpg';
 export default function NavBar({ title, showBackButton = false, onBackClick = null }) {
   const navigate = useNavigate();
   const { isDarkMode } = useDarkMode();
-  const [profilePicture, setProfilePicture] = useState('');
+  const [profilePicture, setProfilePicture] = useState(maleProfilePic); // Default to male profile pic
   const [userName, setUserName] = useState('');
 
-  useEffect(() => {
+  // Function to load user data
+  const loadUserData = () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (user.fullName) {
       setUserName(user.fullName);
@@ -22,8 +23,33 @@ export default function NavBar({ title, showBackButton = false, onBackClick = nu
         setProfilePicture(femaleProfilePic);
       } else if (user.profilePicture.startsWith('data:')) {
         setProfilePicture(user.profilePicture);
+      } else {
+        setProfilePicture(maleProfilePic); // Default fallback
       }
+    } else {
+      setProfilePicture(maleProfilePic); // Default if no profile picture set
     }
+  };
+
+  useEffect(() => {
+    loadUserData();
+    
+    // Listen for storage changes (real-time sync across tabs/components)
+    const handleStorageChange = (e) => {
+      if (e.key === 'user') {
+        loadUserData();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Poll for changes every 2 seconds (for same-tab updates)
+    const interval = setInterval(loadUserData, 2000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleBack = () => {

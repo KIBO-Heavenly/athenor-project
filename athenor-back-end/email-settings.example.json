@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Email__SmtpHost",
+    "value": "smtp.gmail.com",
+    "slotSetting": false
+  },
+  {
+    "name": "Email__SmtpPort",
+    "value": "587",
+    "slotSetting": false
+  },
+  {
+    "name": "Email__SmtpUser",
+    "value": "your-email@gmail.com",
+    "slotSetting": false
+  },
+  {
+    "name": "Email__SmtpPass",
+    "value": "your-app-specific-password-here",
+    "slotSetting": false
+  },
+  {
+    "name": "Email__FromEmail",
+    "value": "noreply@yourdomain.com",
+    "slotSetting": false
+  },
+  {
+    "name": "Email__FromName",
+    "value": "Athenor",
+    "slotSetting": false
+  },
+  {
+    "name": "FrontendUrl",
+    "value": "https://your-frontend-url.com",
+    "slotSetting": false
+  }
+]

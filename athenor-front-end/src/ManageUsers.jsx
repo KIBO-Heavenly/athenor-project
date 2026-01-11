@@ -210,18 +210,10 @@ export default function ManageUsers() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8 animate-fadeIn animate-stagger-1">
+          <div className="grid grid-cols-3 gap-4 mb-8 animate-fadeIn animate-stagger-1">
             <div className={`p-4 rounded-lg text-center ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
               <p className={`text-3xl font-bold ${isDarkMode ? 'text-emerald-400' : 'text-blue-600'}`}>{stats.total}</p>
               <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Users</p>
-            </div>
-            <div className={`p-4 rounded-lg text-center ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
-              <p className={`text-3xl font-bold ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>{stats.tutors}</p>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Tutors</p>
-            </div>
-            <div className={`p-4 rounded-lg text-center ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
-              <p className={`text-3xl font-bold ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>{stats.admins}</p>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Admins</p>
             </div>
             <div className={`p-4 rounded-lg text-center ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
               <p className={`text-3xl font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>{stats.verified}</p>

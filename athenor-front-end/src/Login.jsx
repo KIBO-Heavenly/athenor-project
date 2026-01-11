@@ -19,6 +19,8 @@ export default function Login() {
   const [modalType, setModalType] = useState("info");
   const [showResendButton, setShowResendButton] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const handleResendVerification = async () => {
     setResending(true);
@@ -26,26 +28,23 @@ export default function Login() {
       const response = await fetch(`${API_URL}/api/Auth/resend-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(email)
+        body: JSON.stringify({ email })
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setModalTitle("Email Sent");
-        setModalMessage("Verification email has been resent. Please check your inbox.");
-        setModalType("success");
+        setResendMessage("Verification email sent! Please check your inbox.");
+        setResendSuccess(true);
         setShowResendButton(false);
       } else {
-        setModalTitle("Error");
-        setModalMessage(data.message || "Failed to resend verification email.");
-        setModalType("error");
+        setResendMessage(data.message || "Failed to resend verification email.");
+        setResendSuccess(false);
       }
     } catch (err) {
       console.error(err);
-      setModalTitle("Error");
-      setModalMessage("Something went wrong!");
-      setModalType("error");
+      setResendMessage("Something went wrong. Please try again.");
+      setResendSuccess(false);
     } finally {
       setResending(false);
     }
@@ -54,13 +53,21 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setShowResendButton(false);
+
+    // Create an AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
       const response = await fetch(`${API_URL}/api/Auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -83,13 +90,20 @@ export default function Login() {
         } else {
           navigate("/tutor-dashboard");
         }
+      } else if (response.status === 403) {
+        // 403 often means quota exceeded on Azure
+        setModalTitle("Server Unavailable");
+        setModalMessage("The server has reached its daily quota limit. This typically resets at midnight UTC. Please try again later or contact the administrator.");
+        setModalType("warning");
+        setModalOpen(true);
       } else {
         // Handle specific error types
         if (data.errorType === "not_verified") {
+          setShowResendButton(true);
+          setResendMessage("");
           setModalTitle("Email Not Verified");
           setModalMessage(data.message || "Please verify your email before logging in.");
           setModalType("warning");
-          setShowResendButton(true);
         } else if (data.errorType === "not_found") {
           setModalTitle("Account Not Found");
           setModalMessage(data.message || "No account found with this email.");
@@ -104,10 +118,19 @@ export default function Login() {
         setModalOpen(true);
       }
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error("Login error:", error);
-      setModalTitle("Connection Error");
-      setModalMessage("Unable to connect to the server. Please try again.");
-      setModalType("error");
+      
+      // Check if it was a timeout (AbortError)
+      if (error.name === 'AbortError') {
+        setModalTitle("Server Quota Exceeded");
+        setModalMessage("The server is not responding. This usually means the daily CPU quota has been reached. The quota resets at midnight UTC (6 PM CST). Please try again later.");
+        setModalType("warning");
+      } else {
+        setModalTitle("Connection Error");
+        setModalMessage("Unable to connect to the server. Please check your internet connection and try again.");
+        setModalType("error");
+      }
       setModalOpen(true);
     } finally {
       setLoading(false);
@@ -210,6 +233,34 @@ export default function Login() {
             </button>
           </form>
 
+          {/* Resend Verification Email Button - shown when email not verified */}
+          {showResendButton && (
+            <div className="mt-4">
+              <button
+                onClick={handleResendVerification}
+                disabled={resending}
+                className={`w-full py-2.5 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                  isDarkMode
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                    : 'bg-amber-500 hover:bg-amber-600 text-white'
+                } ${resending ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {resending ? "Sending..." : "Resend Verification Email"}
+              </button>
+            </div>
+          )}
+
+          {/* Resend feedback message */}
+          {resendMessage && (
+            <p className={`mt-3 text-sm text-center ${
+              resendSuccess
+                ? (isDarkMode ? 'text-emerald-400' : 'text-emerald-600')
+                : (isDarkMode ? 'text-red-400' : 'text-red-600')
+            }`}>
+              {resendMessage}
+            </p>
+          )}
+
           {/* Footer */}
           <p className={`mt-6 text-sm text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             Don't have an account?{" "}
@@ -232,23 +283,8 @@ export default function Login() {
         type={modalType}
         onClose={() => {
           setModalOpen(false);
-          setShowResendButton(false);
         }}
-      >
-        {showResendButton && (
-          <button
-            onClick={handleResendVerification}
-            disabled={resending}
-            className={`mt-4 w-full py-2.5 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-              isDarkMode
-                ? 'bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white'
-                : 'bg-gradient-to-r from-blue-600 via-cyan-600 to-emerald-600 hover:shadow-lg text-white'
-            } ${resending ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {resending ? "Sending..." : "Resend Verification Email"}
-          </button>
-        )}
-      </Modal>
+      />
     </>
   );
 }
