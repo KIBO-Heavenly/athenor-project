@@ -258,15 +258,13 @@ npm run test
 
 ---
 
-## 🤝 Contributing
+## 📌 About This Project
 
-Contributions are welcome! Please follow these steps:
+This is a **senior capstone project** developed for Texas A&M University - Corpus Christi's tutoring services. The repository is public to showcase development skills and serve as a portfolio piece.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+**Note:** This is a production system in use at TAMUCC. While the code is available for educational review, this is not an open-source project accepting public contributions.
+
+If you're interested in building a similar system, feel free to reference the architecture and implementation patterns!
 
 ---
 
@@ -286,7 +284,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Texas A&M University - Corpus Christi
 - Department of Computer Science
-- Senior Capstone Project Advisor: [Advisor Name]
+- TAMUCC Tutoring Services
+- Senior Capstone Project - Fall 2024/Spring 2025
 
 ---
 
