@@ -20,9 +20,9 @@
 
 ## 📋 Overview
 
-Athenor is a full-stack tutoring management system I built as my senior capstone project. Think of it as a one-stop shop for managing tutors, schedules, reviews, and all that fun stuff universities need. Built it to potentially help out TAMUCC's tutoring center, but honestly, it's mainly here as a portfolio piece to show off what I can build! 🚀
+Athenor is a full-stack tutoring management system developed as my senior capstone project. The application provides comprehensive tools for managing tutors, schedules, student reviews, and administrative tasks for university tutoring services. 
 
-It's got authentication, scheduling with conflict detection, anonymous reviews, email notifications, and even imports schedules from Word docs (because who wants to type everything manually?).
+Designed with real-world tutoring center needs in mind, the platform features JWT authentication, dynamic scheduling with conflict detection, anonymous reviews, automated email notifications, and bulk schedule imports from Word documents. The project serves as both a functional application and a portfolio demonstration of full-stack development capabilities.
 
 ### Key Capabilities
 
@@ -264,13 +264,11 @@ npm run test
 
 ## 📌 About This Project
 
-This is my **senior capstone project** - basically the final boss of my Computer Science degree at TAMUCC! 🎓
+This is a **senior capstone project** completed for Texas A&M University - Corpus Christi's Computer Science program. The application was developed as a fully functional system with potential real-world application for tutoring service management.
 
-I built this as a fully functional web app that could help manage tutoring services. TAMUCC's tutoring center might use it, might not - either way, it's a real working system that I'm proud to show off.
+**Repository Purpose:** This repository is public to serve as a portfolio demonstration of full-stack development skills. The codebase is available for review, learning, and reference. While the project is open source under the MIT License, it is maintained as a portfolio piece and is not actively accepting external contributions.
 
-**Why is this public?** Portfolio, baby! Employers can see I can actually build stuff. Feel free to browse the code, learn from it, or use it as inspiration for your own projects. Just a heads up though - I'm not accepting pull requests since this is my personal portfolio piece.
-
-**The Legal Stuff:** Yeah, there's an MIT License on here. That basically means "use it however you want, just don't blame me if something breaks." It's the most chill license in the open source world.
+**License Note:** This project uses the MIT License, providing free usage rights while limiting liability. Anyone is welcome to use, study, or reference the code for educational or commercial purposes.
 
 ---
 
@@ -290,12 +288,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **TAMUCC Computer Science Department** - Thanks for the education and the capstone requirement that made me build this!
 - **My Capstone Team** - Fall 2024/Spring 2025 crew
-- **TAMUCC Tutoring Services** - For being potential users and giving me a real-world problem to solve
-- **Coffee** - The real MVP ☕
+- Texas A&M University - Corpus Christi Computer Science Department
+- Capstone Project Team - Fall 2024/Spring 2025
+- TAMUCC Tutoring Services - For providing real-world context and requirements
 
-**Note:** I own this project, but TAMUCC's tutoring center is welcome to use it if they want!
-
----
+**Note:** This project is independently developed and owned. TAMUCC Tutoring Services has permission to utilize the system under the MIT License terms.
 
 ## 📞 Contact
 
