@@ -93,7 +93,7 @@ Athenor is a full-stack tutoring management system designed for Texas A&M Univer
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/athenor-project.git
+   git clone https://github.com/KIBO-Heavenly/athenor-project.git
    cd athenor-project/athenor-back-end/athenor-back-end
    ```
 
@@ -278,7 +278,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👥 Authors
 
-- **Your Name** - *Full Stack Development* - [GitHub](https://github.com/YOUR_USERNAME) | [LinkedIn](https://linkedin.com/in/YOUR_PROFILE)
+- **KIBO-Heavenly** - *Full Stack Development* - [GitHub](https://github.com/KIBO-Heavenly)
 
 ---
 
@@ -294,8 +294,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For questions or support, please reach out:
 
-- **Email:** your.email@example.com
-- **Project Link:** [https://github.com/YOUR_USERNAME/athenor-project](https://github.com/YOUR_USERNAME/athenor-project)
+- **Project Link:** [https://github.com/KIBO-Heavenly/athenor-project](https://github.com/KIBO-Heavenly/athenor-project)
+- **Live Demo:** [Athenor on Azure](https://kind-smoke-0cd0b391e.3.azurestaticapps.net)
 
 ---
 
