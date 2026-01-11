@@ -18,7 +18,7 @@
 
 ## 📋 Overview
 
-Athenor is a full-stack tutoring management system designed for Texas A&M University - Corpus Christi (TAMUCC). The platform streamlines tutor scheduling, student reviews, availability management, and administrative oversight for university tutoring centers.
+Athenor is a full-stack tutoring management system developed as a senior capstone project. The platform was designed to streamline tutor scheduling, student reviews, availability management, and administrative oversight for university tutoring services. Currently deployed and in use at Texas A&M University - Corpus Christi (TAMUCC).
 
 ### Key Capabilities
 
@@ -260,11 +260,11 @@ npm run test
 
 ## 📌 About This Project
 
-This is a **senior capstone project** developed for Texas A&M University - Corpus Christi's tutoring services. The repository is public to showcase development skills and serve as a portfolio piece.
+This is a **senior capstone project** developed by students and currently deployed at Texas A&M University - Corpus Christi for their tutoring services. The application is owned and maintained by the development team.
 
-**Note:** This is a production system in use at TAMUCC. While the code is available for educational review, this is not an open-source project accepting public contributions.
+The repository is public as a portfolio piece to demonstrate full-stack development skills. While the code is open source under MIT License, this is an active production system and not accepting public contributions.
 
-If you're interested in building a similar system, feel free to reference the architecture and implementation patterns!
+**Usage Rights:** TAMUCC has permission to use this system for their tutoring services. Others interested in similar functionality are welcome to reference the architecture and implementation patterns under the terms of the MIT License.
 
 ---
 
@@ -282,10 +282,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Texas A&M University - Corpus Christi
-- Department of Computer Science
-- TAMUCC Tutoring Services
-- Senior Capstone Project - Fall 2024/Spring 2025
+- Texas A&M University - Corpus Christi Department of Computer Science
+- TAMUCC Tutoring Services (deployment partner)
+- Senior Capstone Project Team - Fall 2024/Spring 2025
+
+**Note:** This project is independently owned by the development team. TAMUCC is a deployment partner with permission to use the system.
 
 ---
 
