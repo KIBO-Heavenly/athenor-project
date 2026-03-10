@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using athenor_back_end.Data;
 using athenor_back_end.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace athenor_back_end.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // All authenticated users can manage tutor availability
     public class TutorAvailabilityController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

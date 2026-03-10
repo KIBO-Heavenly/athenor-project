@@ -12,17 +12,22 @@ namespace athenor_back_end.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        // Database context reference
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly IJwtService _jwtService;
         private static readonly string[] _allowedEmailDomains = { "@tamucc.edu", "@islander.tamucc.edu" };
 
-        public AuthController(ApplicationDbContext context, IEmailService emailService, IConfiguration configuration)
+        public AuthController(
+            ApplicationDbContext context, 
+            IEmailService emailService, 
+            IConfiguration configuration,
+            IJwtService jwtService)
         {
             _context = context;
             _emailService = emailService;
             _configuration = configuration;
+            _jwtService = jwtService;
         }
 
         private bool IsUniversityEmail(string email)
@@ -33,60 +38,90 @@ namespace athenor_back_end.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
-            // Block ***REMOVED*** from registering
-            if (dto.Email.Equals("***REMOVED***", StringComparison.OrdinalIgnoreCase))
-                return BadRequest(new { message = "This email cannot be registered" });
-
-            // Validate university email
-            if (!IsUniversityEmail(dto.Email))
-                return BadRequest(new { message = "Only university email addresses (@tamucc.edu or @islander.tamucc.edu) are allowed" });
-
-            // Check if the email already exists
-            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-                return BadRequest(new { message = "Email already exists" });
-
-            // Generate verification token
-            var verificationToken = Guid.NewGuid().ToString();
-
-            // Force role to Tutor
-            var user = new User
-            {
-                FullName = dto.FullName,
-                Email = dto.Email,
-                PasswordHash = PasswordHelper.HashPassword(dto.Password),
-                Role = "Tutor",
-                IsEmailVerified = false,
-                EmailVerificationToken = verificationToken,
-                EmailVerificationExpiry = DateTime.UtcNow.AddHours(24)
-            };
-
-            // Save user in the database
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            // Send verification email (wrapped in try-catch to not block registration)
             try
             {
-                var verificationLink = $"https://kind-smoke-0cd0b391e.3.azurestaticapps.net/verify-email?token={verificationToken}";
-                await _emailService.SendEmailAsync(
-                    user.Email,
-                    "Verify Your Email - Athenor",
-                    $"Please verify your email by clicking this link: {verificationLink}"
-                );
+                // Block ***REMOVED*** from registering
+                if (dto.Email.Equals("***REMOVED***", StringComparison.OrdinalIgnoreCase))
+                    return BadRequest(new { message = "This email cannot be registered" });
+
+                // Validate university email
+                if (!IsUniversityEmail(dto.Email))
+                    return BadRequest(new { message = "Only university email addresses (@tamucc.edu or @islander.tamucc.edu) are allowed" });
+
+                // Check if the email already exists
+                if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+                    return BadRequest(new { message = "Email already exists" });
+
+                // Generate verification token
+                var verificationToken = Guid.NewGuid().ToString();
+
+                // Randomly assign a profile picture (male or female avatar)
+                var random = new Random();
+                var randomAvatar = random.Next(2) == 0 ? "athenor-male-pfp" : "athenor-female-pfp";
+
+                // Check if email verification should be skipped (when SMTP is not configured)
+                var smtpUser = _configuration["Email:SmtpUser"];
+                var skipEmailVerification = string.IsNullOrEmpty(smtpUser);
+
+                // Force role to Tutor
+                var user = new User
+                {
+                    FullName = dto.FullName,
+                    Email = dto.Email,
+                    PasswordHash = PasswordHelper.HashPassword(dto.Password),
+                    Role = "Tutor",
+                    ProfilePicture = randomAvatar,
+                    IsEmailVerified = skipEmailVerification, // Auto-verify if SMTP not configured
+                    EmailVerificationToken = verificationToken,
+                    EmailVerificationExpiry = DateTime.UtcNow.AddHours(24)
+                };
+
+                // Save user in the database
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"User registered successfully: {user.Email}");
+
+                // Send verification email (fire-and-forget for faster response)
+                if (!skipEmailVerification)
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var frontendUrl = _configuration["FrontendUrl"] ?? "https://kind-smoke-0cd0b391e.3.azurestaticapps.net";
+                            await _emailService.SendVerificationEmailAsync(user.Email, verificationToken, frontendUrl);
+                            Console.WriteLine($"Verification email sent to {user.Email}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Failed to send verification email: {ex.Message}");
+                        }
+                    });
+                }
+                else
+                {
+                    Console.WriteLine($"⚠️ Email verification skipped - SMTP not configured. User auto-verified.");
+                }
+
+                var message = skipEmailVerification 
+                    ? "Registration successful! You can now log in." 
+                    : "Registration successful! Please check your email to verify your account.";
+
+                return Ok(new { 
+                    message = message,
+                    id = user.Id,
+                    email = user.Email,
+                    fullName = user.FullName,
+                    role = user.Role
+                });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to send verification email: {ex.Message}");
-                // Continue anyway - user is registered
+                Console.WriteLine($"Registration error: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, new { message = $"Registration failed: {ex.Message}" });
             }
-
-            return Ok(new { 
-                message = "Registration successful! Please check your email to verify your account.",
-                id = user.Id,
-                email = user.Email,
-                fullName = user.FullName,
-                role = user.Role
-            });
         }
 
         [HttpPost("forgot-password")]
@@ -107,7 +142,7 @@ namespace athenor_back_end.Controllers
 
             try
             {
-                var frontendUrl = _configuration["FrontendUrl"] ?? "https://lemon-river-083896710.3.azurestaticapps.net";
+                var frontendUrl = _configuration["FrontendUrl"] ?? "https://kind-smoke-0cd0b391e.3.azurestaticapps.net";
                 await _emailService.SendPasswordResetEmailAsync(dto.Email, resetToken, frontendUrl);
             }
             catch (Exception ex)
@@ -141,75 +176,59 @@ namespace athenor_back_end.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
+            // Validate input
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+                return BadRequest(new { message = "Email and password are required" });
+
             Console.WriteLine($"Login attempt for {dto.Email}");
-            // DEMO MODE: Always allow admin login
-            if (dto.Email == "***REMOVED***" && dto.Password == "***REMOVED***")
-            {
-                Console.WriteLine("Admin login");
-                var adminUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == "***REMOVED***");
-                if (adminUser == null)
-                {
-                    // Create admin if missing
-                    adminUser = new User
-                    {
-                        Email = "***REMOVED***",
-                        PasswordHash = PasswordHelper.HashPassword("***REMOVED***"),
-                        FullName = "Athenor Admin",
-                        Role = "Admin",
-                        IsEmailVerified = true
-                    };
-                    _context.Users.Add(adminUser);
-                    await _context.SaveChangesAsync();
-                }
-                return Ok(new {
-                    message = "Demo login successful",
-                    id = adminUser.Id,
-                    email = adminUser.Email,
-                    fullName = adminUser.FullName,
-                    role = adminUser.Role,
-                    profilePicture = adminUser.ProfilePicture,
-                    optOutReviews = adminUser.OptOutReviews
-                });
-            }
-            Console.WriteLine("Checking user exists");
-            // First check if user exists at all
-            var userExists = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
             
-            if (userExists == null)
+            // Find user by email
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            
+            if (user == null)
             {
                 Console.WriteLine("User not found");
-                return Unauthorized(new { message = "No account found with this email. Please sign up first.", errorType = "not_found" });
+                // Use generic error message to prevent email enumeration
+                return Unauthorized(new { message = "Invalid email or password", errorType = "invalid_credentials" });
             }
-            Console.WriteLine("User found, hashing password");
-            // Hash the incoming password
-            var hashed = PasswordHelper.HashPassword(dto.Password);
 
-            Console.WriteLine("Checking password");
-            // Check if password is correct
-            if (userExists.PasswordHash != hashed)
+            Console.WriteLine("User found, verifying password");
+            
+            // Verify password using BCrypt (constant-time comparison)
+            if (!PasswordHelper.VerifyPassword(dto.Password, user.PasswordHash))
             {
                 Console.WriteLine("Wrong password");
-                return Unauthorized(new { message = "Incorrect password. Please try again.", errorType = "wrong_password" });
+                // Use generic error message to prevent timing attacks
+                return Unauthorized(new { message = "Invalid email or password", errorType = "invalid_credentials" });
             }
 
-            Console.WriteLine("Checking verification");
+            Console.WriteLine("Password correct, checking verification");
+            
             // Check if email is verified
-            if (!userExists.IsEmailVerified)
+            if (!user.IsEmailVerified)
             {
-                Console.WriteLine("Not verified");
+                Console.WriteLine("Email not verified");
                 return Unauthorized(new { message = "Please verify your email before logging in", errorType = "not_verified" });
             }
 
-            Console.WriteLine("Login successful");
-            // Return login result with user info including profile picture
+            Console.WriteLine("Login successful, generating JWT token");
+            
+            // Generate JWT token
+            var token = _jwtService.GenerateToken(user);
+            
+            // Return success with JWT token
             return Ok(new { 
-                message = "Login successful", 
-                id = userExists.Id,
-                email = userExists.Email,
-                fullName = userExists.FullName,
-                role = userExists.Role,
-                profilePicture = userExists.ProfilePicture,
-                optOutReviews = userExists.OptOutReviews
+                message = "Login successful",
+                token = token, // JWT token for authentication
+                user = new
+                {
+                    id = user.Id,
+                    email = user.Email,
+                    fullName = user.FullName,
+                    role = user.Role,
+                    profilePicture = user.ProfilePicture,
+                    optOutReviews = user.OptOutReviews
+                }
             });
         }
 
@@ -251,20 +270,20 @@ namespace athenor_back_end.Controllers
 
             await _context.SaveChangesAsync();
 
-            // Send verification email (wrapped in try-catch)
-            try
+            // Send verification email (fire-and-forget for faster response)
+            _ = Task.Run(async () =>
             {
-                var verificationLink = $"https://kind-smoke-0cd0b391e.3.azurestaticapps.net/verify-email?token={verificationToken}";
-                await _emailService.SendEmailAsync(
-                    user.Email,
-                    "Verify Your Email - Athenor",
-                    $"Please verify your email by clicking this link: {verificationLink}"
-                );
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to send verification email: {ex.Message}");
-            }
+                try
+                {
+                    var frontendUrl = _configuration["FrontendUrl"] ?? "https://kind-smoke-0cd0b391e.3.azurestaticapps.net";
+                    await _emailService.SendVerificationEmailAsync(user.Email, verificationToken, frontendUrl);
+                    Console.WriteLine($"Resend verification email sent to {user.Email}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to send verification email: {ex.Message}");
+                }
+            });
 
             return Ok(new { message = "Verification email sent" });
         }

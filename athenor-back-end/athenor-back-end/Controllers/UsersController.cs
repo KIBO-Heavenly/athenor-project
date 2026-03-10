@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using athenor_back_end.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace athenor_back_end.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Require authentication for all endpoints
     public class UsersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -15,7 +17,7 @@ namespace athenor_back_end.Controllers
             _context = context;
         }
 
-        // GET all users (for admin) - excludes ***REMOVED***
+        // GET all users - excludes ***REMOVED***
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
@@ -35,6 +37,26 @@ namespace athenor_back_end.Controllers
                 .ToListAsync();
 
             return Ok(users);
+        }
+
+        // GET single user by ID
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUser(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            
+            if (user == null)
+                return NotFound(new { message = "User not found" });
+
+            return Ok(new {
+                user.Id,
+                user.Email,
+                user.FullName,
+                user.Role,
+                user.ProfilePicture,
+                user.OptOutReviews,
+                user.IsEmailVerified
+            });
         }
 
         // GET user count (excludes ***REMOVED***)
@@ -65,17 +87,18 @@ namespace athenor_back_end.Controllers
             if (user == null)
                 return NotFound(new { message = "User not found" });
 
-            // Also delete any schedules associated with this user
+            // Preserve schedules for collaboration - just remove the user reference
+            // The TutorName field keeps the assignment visible in the schedule
             var userSchedules = await _context.Schedules
                 .Where(s => s.UserId == id)
                 .ToListAsync();
             
-            if (userSchedules.Any())
+            foreach (var schedule in userSchedules)
             {
-                _context.Schedules.RemoveRange(userSchedules);
+                schedule.UserId = null; // Unlink from deleted user but preserve the schedule entry
             }
 
-            // Also delete any reviews by or for this user
+            // Delete reviews for/by this user (reviews are personal, not collaborative)
             var userReviews = await _context.Reviews
                 .Where(r => r.TutorId == id)
                 .ToListAsync();
@@ -88,13 +111,22 @@ namespace athenor_back_end.Controllers
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = $"User '{user.FullName ?? user.Email}' has been deleted." });
+            return Ok(new { message = $"User '{user.FullName ?? user.Email}' has been deleted. Their schedule assignments have been preserved." });
         }
 
         // PUT update user profile picture
         [HttpPut("{id}/profile-picture")]
+        [Authorize] // Users can update their own profile
         public async Task<IActionResult> UpdateProfilePicture(int id, [FromBody] ProfilePictureDto dto)
         {
+            // Get current user ID from JWT token
+            var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var isAdmin = User.IsInRole("Admin");
+            
+            // Users can only update their own profile unless they're admin
+            if (currentUserId != id && !isAdmin)
+                return Forbid();
+                
             var user = await _context.Users.FindAsync(id);
             
             if (user == null)
@@ -108,8 +140,17 @@ namespace athenor_back_end.Controllers
 
         // PUT update user opt-out status
         [HttpPut("{id}/opt-out")]
+        [Authorize] // Users can update their own opt-out status
         public async Task<IActionResult> UpdateOptOut(int id, [FromBody] OptOutDto dto)
         {
+            // Get current user ID from JWT token
+            var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var isAdmin = User.IsInRole("Admin");
+            
+            // Users can only update their own settings unless they're admin
+            if (currentUserId != id && !isAdmin)
+                return Forbid();
+                
             var user = await _context.Users.FindAsync(id);
             
             if (user == null)

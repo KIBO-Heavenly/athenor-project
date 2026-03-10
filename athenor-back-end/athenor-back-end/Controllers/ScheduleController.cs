@@ -3,11 +3,13 @@ using athenor_back_end.Data;
 using athenor_back_end.Models;
 using AthenorBackEnd.DTOs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace athenor_back_end.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Require authentication for all schedule endpoints
     public class ScheduleController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

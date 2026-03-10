@@ -237,6 +237,42 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Drag and drop improvements */
+.dragging-active * {
+  user-select: none !important;
+}
+
+/* Prevent body scrolling when dragging in a modal */
+body.dragging-in-modal {
+  overflow: hidden;
+}
+
+/* Smooth scroll for drag containers */
+#calendar-scroll-container {
+  scroll-behavior: auto; /* Use auto during drag, smooth otherwise */
+  -webkit-overflow-scrolling: touch;
+}
+
+#calendar-scroll-container.dragging {
+  scroll-behavior: auto !important;
+}
+
+/* Drop zone visual feedback */
+.drop-zone-active {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  transition: background-color 0.15s ease-in-out;
+}
+
+/* Draggable item cursor */
+[draggable="true"] {
+  cursor: grab;
+  touch-action: none;
+}
+
+[draggable="true"]:active {
+  cursor: grabbing;
+}
+
 /* 3D hover effects */
 .hover-3d {
   transition: transform 0.3s ease;

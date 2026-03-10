@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using OfficeOpenXml;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace athenor_back_end.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // All authenticated users can import data
     public class DataImportController : ControllerBase
     {
         [HttpPost("upload")]

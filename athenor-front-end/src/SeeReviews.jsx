@@ -4,6 +4,8 @@ import { useDarkMode } from './DarkModeContext';
 import NavBar from './NavBar';
 import Modal from './Modal';
 import { API_URL } from './config';
+import api from './api';
+import { getDashboardPath } from './ProtectedRoute';
 import maleProfilePic from './assets/athenor-male-pfp.jpg';
 import femaleProfilePic from './assets/athenor-female-pfp.jpg';
 
@@ -36,7 +38,7 @@ export default function SeeReviews() {
 
   const fetchMyReviews = async (userId) => {
     try {
-      const response = await fetch(`${API_URL}/api/Reviews/tutor/${userId}`);
+      const response = await api.get(`/api/Reviews/tutor/${userId}`);
       if (response.ok) {
         const data = await response.json();
         setReviews(data.reviews || []);
@@ -111,7 +113,7 @@ export default function SeeReviews() {
   if (loading) {
     return (
       <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-        <NavBar title="My Reviews" showBackButton={true} onBackClick={() => navigate('/admin')} />
+        <NavBar title="My Reviews" showBackButton={true} onBackClick={() => navigate(getDashboardPath())} />
         <div className="flex items-center justify-center min-h-[70vh]">
           <div className="flex flex-col items-center gap-4">
             <svg className="animate-spin h-12 w-12 text-cyan-500" viewBox="0 0 24 24">
@@ -127,7 +129,7 @@ export default function SeeReviews() {
 
   return (
     <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-      <NavBar title="My Reviews" showBackButton={true} onBackClick={() => navigate('/admin')} />
+      <NavBar title="My Reviews" showBackButton={true} onBackClick={() => navigate(getDashboardPath())} />
 
       <section className="w-full py-8 px-6">
         <div className="max-w-4xl mx-auto">

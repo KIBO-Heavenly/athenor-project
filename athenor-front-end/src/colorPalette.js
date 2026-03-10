@@ -4,20 +4,33 @@
  */
 
 // High contrast color palette - HSL format for easy manipulation
-// These colors have been selected to be distinguishable and work in both light/dark modes
+// 25 unique colors that are distinguishable and work in both light/dark modes
 export const BASE_COLORS = [
   { h: 0, s: 85, l: 50 },     // Red
+  { h: 15, s: 85, l: 50 },    // Red-Orange
   { h: 30, s: 85, l: 50 },    // Orange
   { h: 45, s: 85, l: 50 },    // Gold
-  { h: 60, s: 85, l: 50 },    // Yellow
-  { h: 90, s: 85, l: 50 },    // Lime
-  { h: 120, s: 85, l: 50 },   // Green
-  { h: 150, s: 85, l: 50 },   // Mint
-  { h: 180, s: 85, l: 50 },   // Cyan
-  { h: 210, s: 85, l: 50 },   // Sky
-  { h: 240, s: 85, l: 50 },   // Blue
-  { h: 270, s: 85, l: 50 },   // Purple
-  { h: 300, s: 85, l: 50 },   // Magenta
+  { h: 55, s: 85, l: 50 },    // Yellow-Gold
+  { h: 70, s: 85, l: 45 },    // Yellow-Green
+  { h: 90, s: 85, l: 45 },    // Lime
+  { h: 110, s: 85, l: 45 },   // Light Green
+  { h: 130, s: 85, l: 45 },   // Green
+  { h: 150, s: 85, l: 45 },   // Mint
+  { h: 170, s: 85, l: 45 },   // Teal
+  { h: 185, s: 85, l: 50 },   // Cyan
+  { h: 200, s: 85, l: 50 },   // Light Blue
+  { h: 215, s: 85, l: 50 },   // Sky Blue
+  { h: 230, s: 85, l: 55 },   // Blue
+  { h: 245, s: 85, l: 55 },   // Indigo
+  { h: 260, s: 85, l: 55 },   // Blue-Purple
+  { h: 275, s: 85, l: 55 },   // Purple
+  { h: 290, s: 85, l: 55 },   // Violet
+  { h: 305, s: 85, l: 50 },   // Magenta
+  { h: 320, s: 85, l: 50 },   // Pink
+  { h: 335, s: 85, l: 50 },   // Rose
+  { h: 350, s: 85, l: 50 },   // Crimson
+  { h: 25, s: 70, l: 40 },    // Brown
+  { h: 195, s: 50, l: 40 },   // Steel Blue
 ];
 
 /**
@@ -43,7 +56,7 @@ function hslToHex(h, s, l) {
 
 /**
  * Generate a unique color for a given user index
- * Returns both light mode and dark mode variations
+ * Returns a consistent color that works well in both light and dark modes
  */
 export function generateUserColor(userIndex) {
   // Cycle through base colors and vary saturation/lightness for more variety
@@ -54,17 +67,19 @@ export function generateUserColor(userIndex) {
 
   // Adjust saturation and lightness based on variation to create unique colors
   const saturation = Math.max(60, 85 - variation * 5);
-  const lightnessLight = 50 + (variation % 3) * 5; // Vary lightness for light mode
-  const lightnessDark = 70 + (variation % 3) * 5;  // Brighter for better dark mode readability
+  // Use a medium lightness that works well in both light and dark modes
+  const lightness = 55 + (variation % 3) * 5;
+
+  const color = hslToHex(baseColor.h, saturation, lightness);
 
   return {
     name: `Color-${userIndex}`,
-    light: hslToHex(baseColor.h, saturation, lightnessLight),
-    dark: hslToHex(baseColor.h, saturation, lightnessDark),
+    light: color,  // Use same color for both modes
+    dark: color,   // Use same color for both modes
     hue: baseColor.h,
     saturation,
-    lightnessLight,
-    lightnessDark,
+    lightnessLight: lightness,
+    lightnessDark: lightness,
   };
 }
 

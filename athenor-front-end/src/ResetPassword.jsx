@@ -17,9 +17,21 @@ export default function ResetPassword() {
   const [modalMessage, setModalMessage] = useState("");
   const [modalTitle, setModalTitle] = useState("");
   const [modalType, setModalType] = useState("info");
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const navigate = useNavigate();
 
   const token = searchParams.get("token");
+
+  // Password validation checks
+  const passwordChecks = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[@$!%*?&#]/.test(password)
+  };
+
+  const allChecksPassed = Object.values(passwordChecks).every(check => check);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,9 +44,9 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password.length < 6) {
+    if (!allChecksPassed) {
       setModalTitle("Error");
-      setModalMessage("Password must be at least 6 characters.");
+      setModalMessage("Password does not meet security requirements. Please check all requirements below.");
       setModalType("error");
       setModalOpen(true);
       return;
@@ -58,13 +70,27 @@ export default function ResetPassword() {
         setModalType("success");
       } else {
         setModalTitle("Error");
-        setModalMessage(data.message || "Failed to reset password.");
+        
+        // Handle validation errors from ASP.NET Core
+        let errorMessage = "Failed to reset password.";
+        if (data.errors) {
+          // Extract validation error messages
+          const errorMessages = Object.values(data.errors).flat();
+          errorMessage = errorMessages.join(" ");
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.title) {
+          errorMessage = data.title;
+        }
+        
+        setModalMessage(errorMessage);
         setModalType("error");
       }
       setModalOpen(true);
     } catch (err) {
+      console.error(err);
       setModalTitle("Error");
-      setModalMessage("Something went wrong. Please try again.");
+      setModalMessage(`Password reset request failed: ${err.message || 'Network error or server is unreachable. Please check your connection and try again.'}`);
       setModalType("error");
       setModalOpen(true);
     } finally {
@@ -166,6 +192,8 @@ export default function ResetPassword() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
                   placeholder="••••••••"
                   className={`w-full border rounded-lg px-4 py-2.5 transition-all focus:outline-none focus:ring-2 ${
                     isDarkMode
@@ -173,8 +201,44 @@ export default function ResetPassword() {
                       : 'bg-white border-cyan-200 text-gray-900 placeholder-gray-400 focus:ring-cyan-500'
                   }`}
                   required
-                  minLength={6}
                 />
+                
+                {/* Password Requirements Tooltip */}
+                {(passwordFocused || (password && !allChecksPassed)) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`mt-2 p-3 rounded-lg text-xs ${
+                      isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    <p className={`font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Password must contain:
+                    </p>
+                    <ul className="space-y-1">
+                      <li className={`flex items-center ${passwordChecks.length ? 'text-green-500' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <span className="mr-2">{passwordChecks.length ? '✓' : '○'}</span>
+                        At least 8 characters
+                      </li>
+                      <li className={`flex items-center ${passwordChecks.uppercase ? 'text-green-500' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <span className="mr-2">{passwordChecks.uppercase ? '✓' : '○'}</span>
+                        One uppercase letter (A-Z)
+                      </li>
+                      <li className={`flex items-center ${passwordChecks.lowercase ? 'text-green-500' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <span className="mr-2">{passwordChecks.lowercase ? '✓' : '○'}</span>
+                        One lowercase letter (a-z)
+                      </li>
+                      <li className={`flex items-center ${passwordChecks.number ? 'text-green-500' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <span className="mr-2">{passwordChecks.number ? '✓' : '○'}</span>
+                        One number (0-9)
+                      </li>
+                      <li className={`flex items-center ${passwordChecks.special ? 'text-green-500' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <span className="mr-2">{passwordChecks.special ? '✓' : '○'}</span>
+                        One special character (@$!%*?&#)
+                      </li>
+                    </ul>
+                  </motion.div>
+                )}
               </div>
 
               <div>

@@ -4,6 +4,8 @@ import { useDarkMode } from './DarkModeContext';
 import NavBar from './NavBar';
 import { getUserColor } from './colorPalette';
 import { API_URL } from './config';
+import api from './api';
+import { getDashboardPath } from './ProtectedRoute';
 
 export default function MasterSchedule() {
   const navigate = useNavigate();
@@ -12,13 +14,15 @@ export default function MasterSchedule() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeSection, setActiveSection] = useState('mathCenter');
+  const [tutorColors, setTutorColors] = useState({}); // Custom tutor colors from database
 
-  const timeSlots = [
+  // Default time slots - will be updated from backend
+  const [timeSlots, setTimeSlots] = useState([
     '10:00 – 10:30 AM', '10:30 – 11:00 AM', '11:00 – 11:30 AM', '11:30 – 12:00 PM', '12:00 – 12:30 PM',
     '12:30 – 1:00 PM', '1:00 – 1:30 PM', '1:30 – 2:00 PM', '2:00 – 2:30 PM', '2:30 – 3:00 PM',
     '3:00 – 3:30 PM', '3:30 – 4:00 PM', '4:00 – 4:30 PM', '4:30 – 5:00 PM', '5:00 – 5:30 PM',
-    '5:30 – 6:00 PM', '6:00 – 6:30 PM', '6:30 – 7:00 PM', '7:00 – 7:30 PM'
-  ];
+    '5:30 – 6:00 PM', '6:00 – 6:30 PM', '6:30 – 7:00 PM'
+  ]);
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   const sections = {
@@ -63,11 +67,60 @@ export default function MasterSchedule() {
 
   useEffect(() => {
     fetchSchedules();
+    loadTutorColors();
+    loadCalendarConfig();
   }, []);
+
+  // Load calendar configuration from backend database
+  const loadCalendarConfig = async () => {
+    try {
+      const response = await api.get('/api/CalendarConfig');
+      if (response.ok) {
+        const config = await response.json();
+        const slots = JSON.parse(config.timeSlotsJson);
+        if (Array.isArray(slots) && slots.length > 0) {
+          setTimeSlots(slots);
+          console.log('Loaded calendar config from backend:', slots);
+        }
+      } else {
+        console.log('No calendar config in database, using defaults');
+      }
+    } catch (err) {
+      console.error('Error loading calendar config from backend:', err);
+    }
+  };
+
+  // Load custom tutor colors from database
+  const loadTutorColors = async () => {
+    try {
+      const response = await api.get('/api/TutorColors');
+      if (response.ok) {
+        const colors = await response.json();
+        const colorsMap = {};
+        colors.forEach(c => {
+          colorsMap[c.tutorName] = { light: c.colorLight, dark: c.colorDark };
+        });
+        console.log('Loaded tutor colors from database:', colorsMap);
+        setTutorColors(colorsMap);
+      } else {
+        console.log('No tutor colors in database yet');
+      }
+    } catch (err) {
+      console.error('Error loading tutor colors:', err);
+    }
+  };
+
+  // Get color for a tutor - use custom color if set, otherwise use default
+  const getTutorColor = (tutorName) => {
+    if (tutorColors[tutorName]) {
+      return tutorColors[tutorName];
+    }
+    return getUserColor(tutorName);
+  };
 
   const fetchSchedules = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/Schedule`);
+      const response = await api.get('/api/Schedule');
       if (!response.ok) throw new Error('Failed to fetch schedules');
 
       const data = await response.json();
@@ -82,6 +135,7 @@ export default function MasterSchedule() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchSchedules();
+    await loadTutorColors(); // Also reload colors on refresh
     setTimeout(() => setRefreshing(false), 500);
   };
 
@@ -96,7 +150,7 @@ export default function MasterSchedule() {
   if (loading) {
     return (
       <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-        <NavBar title="Master Schedule" showBackButton={true} onBackClick={() => navigate('/admin')} />
+        <NavBar title="Master Schedule" showBackButton={true} onBackClick={() => navigate(getDashboardPath())} />
         <div className="flex items-center justify-center min-h-[70vh]">
           <p className={`text-xl ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Loading schedule...</p>
         </div>
@@ -106,7 +160,7 @@ export default function MasterSchedule() {
 
   return (
     <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-      <NavBar title="Master Schedule" showBackButton={true} onBackClick={() => navigate('/admin')} />
+      <NavBar title="Master Schedule" showBackButton={true} onBackClick={() => navigate(getDashboardPath())} />
 
       <section className="w-full py-8 px-6">
         <div className="max-w-7xl mx-auto">
@@ -217,7 +271,7 @@ export default function MasterSchedule() {
                         {hasTutors ? (
                           <div className="w-full px-1 py-1 flex flex-col gap-0.5">
                             {tutors.map((tutor, idx) => {
-                              const userColor = getUserColor(tutor);
+                              const userColor = getTutorColor(tutor);
                               return (
                                 <div
                                   key={idx}

@@ -13,6 +13,9 @@ namespace athenor_back_end.Data
         public DbSet<Schedule> Schedules => Set<Schedule>();
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<TutorAvailability> TutorAvailabilities => Set<TutorAvailability>();
+        public DbSet<TutorColor> TutorColors => Set<TutorColor>();
+        public DbSet<ArchivedWeek> ArchivedWeeks => Set<ArchivedWeek>();
+        public DbSet<CalendarConfig> CalendarConfigs => Set<CalendarConfig>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -35,8 +38,8 @@ namespace athenor_back_end.Data
         {
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
             
-            // Use SQL Server for migrations (connection string will be replaced in Azure)
-            optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=AthenorDb;Trusted_Connection=true;");
+            // Use SQLite for migrations - matches production configuration
+            optionsBuilder.UseSqlite("Data Source=athenor.db");
             
             return new ApplicationDbContext(optionsBuilder.Options);
         }

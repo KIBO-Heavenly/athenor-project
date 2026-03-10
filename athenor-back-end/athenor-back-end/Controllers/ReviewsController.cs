@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using athenor_back_end.Data;
 using athenor_back_end.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace athenor_back_end.Controllers
 {
@@ -33,7 +34,8 @@ namespace athenor_back_end.Controllers
             return Ok(tutors);
         }
 
-        // GET: api/Reviews/all-users - Get all users with review stats (admin only) - excludes ***REMOVED***
+        // GET: api/Reviews/all-users - Get all users with review stats - excludes ***REMOVED***
+        [Authorize]
         [HttpGet("all-users")]
         public async Task<IActionResult> GetAllUsersWithReviews()
         {
@@ -104,6 +106,12 @@ namespace athenor_back_end.Controllers
                 return BadRequest(new { message = "Reviewer name is required" });
             }
 
+            // Limit comment length to prevent abuse
+            if (!string.IsNullOrEmpty(reviewDto.Comment) && reviewDto.Comment.Length > 1000)
+            {
+                return BadRequest(new { message = "Comment must be 1000 characters or less" });
+            }
+
             var tutor = await _context.Users.FindAsync(reviewDto.TutorId);
             if (tutor == null)
             {
@@ -115,11 +123,16 @@ namespace athenor_back_end.Controllers
                 return BadRequest(new { message = "This user has opted out of reviews" });
             }
 
+            // Sanitize comment - strip any HTML/script tags for XSS prevention
+            var sanitizedComment = reviewDto.Comment ?? "";
+            sanitizedComment = System.Text.RegularExpressions.Regex.Replace(sanitizedComment, @"<[^>]*>", "");
+            sanitizedComment = System.Net.WebUtility.HtmlEncode(sanitizedComment);
+
             var review = new Review
             {
                 TutorId = reviewDto.TutorId,
                 Rating = reviewDto.Rating,
-                Comment = reviewDto.Comment ?? "",
+                Comment = sanitizedComment,
                 ReviewerName = reviewDto.ReviewerName,
                 CreatedAt = DateTime.UtcNow
             };
@@ -130,7 +143,8 @@ namespace athenor_back_end.Controllers
             return Ok(new { message = "Review submitted successfully", reviewId = review.Id });
         }
 
-        // DELETE: api/Reviews/{id} - Delete a review (admin only, for future use)
+        // DELETE: api/Reviews/{id} - Delete a review
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteReview(int id)
         {

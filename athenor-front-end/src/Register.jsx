@@ -18,8 +18,20 @@ export default function Register() {
   const [modalType, setModalType] = useState("info");
   const [showResendButton, setShowResendButton] = useState(false);
   const [resending, setResending] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   const navigate = useNavigate();
+
+  // Password validation checks
+  const passwordChecks = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[@$!%*?&#]/.test(password)
+  };
+
+  const allChecksPassed = Object.values(passwordChecks).every(check => check);
 
   const handleResendVerification = async () => {
     setResending(true);
@@ -27,10 +39,18 @@ export default function Register() {
       const response = await fetch(`${API_URL}/api/Auth/resend-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(email)
+        body: JSON.stringify({ email: email })
       });
 
-      const data = await response.json();
+      // Handle non-JSON responses
+      const contentType = response.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const textResponse = await response.text();
+        data = { message: textResponse || 'An unexpected error occurred. Please try again.' };
+      }
 
       if (response.ok) {
         setModalTitle("Email Sent");
@@ -54,6 +74,10 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent double-clicks
+    if (loading) return;
+    
     setLoading(true);
 
     try {
@@ -68,24 +92,76 @@ export default function Register() {
         }),
       });
 
-      const data = await response.json();
+      // Handle non-JSON responses (e.g., rate limiting, server errors)
+      const contentType = response.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const textResponse = await response.text();
+        data = { message: textResponse || 'An unexpected error occurred. Please try again.' };
+      }
       console.log("Registration response:", data);
 
       if (response.ok) {
         setModalTitle("Success");
-        setModalMessage("Registration successful! Please check your email to verify your account.");
+        setModalMessage("Registration successful! Please check your email to verify your account. Click OK to continue to the login page.");
         setModalType("success");
         setShowResendButton(false);
         setModalOpen(true);
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
+        // User must click OK button to continue - no auto-navigation
       } else {
         setModalTitle("Registration Error");
-        setModalMessage(data.message || "Registration failed");
+        
+        // Handle validation errors from ASP.NET Core
+        let errorMessage = "Registration failed. Please check your input and try again.";
+        
+        try {
+          // Debug: log the raw data
+          console.log('Error response data:', data);
+          console.log('Error response data type:', typeof data);
+          
+          // If data is a string (shouldn't happen, but just in case), try to parse it
+          let parsedData = data;
+          if (typeof data === 'string') {
+            try {
+              parsedData = JSON.parse(data);
+            } catch {
+              // If it's just a plain string error message, use it
+              errorMessage = data;
+              parsedData = null;
+            }
+          }
+          
+          if (parsedData) {
+            // Handle ASP.NET Core validation errors format
+            if (parsedData.errors && typeof parsedData.errors === 'object') {
+              const allErrors = [];
+              for (const [field, messages] of Object.entries(parsedData.errors)) {
+                if (Array.isArray(messages)) {
+                  allErrors.push(...messages);
+                } else if (typeof messages === 'string') {
+                  allErrors.push(messages);
+                }
+              }
+              if (allErrors.length > 0) {
+                errorMessage = allErrors.join(' ');
+              }
+            } else if (parsedData.message) {
+              errorMessage = parsedData.message;
+            } else if (parsedData.title && parsedData.title !== 'One or more validation errors occurred.') {
+              errorMessage = parsedData.title;
+            }
+          }
+        } catch (parseErr) {
+          console.error('Error parsing validation response:', parseErr);
+          errorMessage = "Registration failed. Please check your input and try again.";
+        }
+        
+        setModalMessage(errorMessage);
         setModalType("error");
         // Show resend button if email already exists
-        if (data.message && data.message.toLowerCase().includes("already")) {
+        if (errorMessage.toLowerCase().includes("already")) {
           setShowResendButton(true);
         } else {
           setShowResendButton(false);
@@ -95,7 +171,7 @@ export default function Register() {
     } catch (err) {
       console.error(err);
       setModalTitle("Error");
-      setModalMessage("Something went wrong!");
+      setModalMessage(`Registration request failed: ${err.message || 'Network error or server is unreachable. Please check your connection and try again.'}`);
       setModalType("error");
       setModalOpen(true);
     } finally {
@@ -162,18 +238,59 @@ export default function Register() {
               />
             </div>
 
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className={`w-full border rounded-lg px-4 py-2.5 transition-all focus:outline-none focus:ring-2 ${
-                isDarkMode
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500 focus:ring-emerald-500'
-                  : 'bg-white border-cyan-200 text-gray-900 placeholder-gray-400 focus:ring-cyan-500'
-              }`}
-            />
+            <div>
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
+                required
+                className={`w-full border rounded-lg px-4 py-2.5 transition-all focus:outline-none focus:ring-2 ${
+                  isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-500 focus:ring-emerald-500'
+                    : 'bg-white border-cyan-200 text-gray-900 placeholder-gray-400 focus:ring-cyan-500'
+                }`}
+              />
+              
+              {/* Password Requirements Tooltip */}
+              {(passwordFocused || (password && !allChecksPassed)) && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mt-2 p-3 rounded-lg text-xs ${
+                    isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50 border border-gray-200'
+                  }`}
+                >
+                  <p className={`font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Password must contain:
+                  </p>
+                  <ul className="space-y-1">
+                    <li className={`flex items-center ${passwordChecks.length ? 'text-green-500' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <span className="mr-2">{passwordChecks.length ? '✓' : '○'}</span>
+                      At least 8 characters
+                    </li>
+                    <li className={`flex items-center ${passwordChecks.uppercase ? 'text-green-500' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <span className="mr-2">{passwordChecks.uppercase ? '✓' : '○'}</span>
+                      One uppercase letter (A-Z)
+                    </li>
+                    <li className={`flex items-center ${passwordChecks.lowercase ? 'text-green-500' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <span className="mr-2">{passwordChecks.lowercase ? '✓' : '○'}</span>
+                      One lowercase letter (a-z)
+                    </li>
+                    <li className={`flex items-center ${passwordChecks.number ? 'text-green-500' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <span className="mr-2">{passwordChecks.number ? '✓' : '○'}</span>
+                      One number (0-9)
+                    </li>
+                    <li className={`flex items-center ${passwordChecks.special ? 'text-green-500' : isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <span className="mr-2">{passwordChecks.special ? '✓' : '○'}</span>
+                      One special character (@$!%*?&#)
+                    </li>
+                  </ul>
+                </motion.div>
+              )}
+            </div>
 
             {/* Role removed – backend decides it's Tutor */}
 

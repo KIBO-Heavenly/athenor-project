@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDarkMode } from './DarkModeContext';
 import NavBar from './NavBar';
+import { getDashboardPath } from './ProtectedRoute';
 
 export default function ImportedData() {
   const location = useLocation();
@@ -17,11 +18,11 @@ export default function ImportedData() {
   if (data.length === 0) {
     return (
       <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-        <NavBar title="Imported Data" showBackButton={true} onBackClick={() => navigate('/admin')} />
+        <NavBar title="Imported Data" showBackButton={true} onBackClick={() => navigate(getDashboardPath())} />
         <div className="max-w-7xl mx-auto px-6 py-12 text-center">
           <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>No data to display. Please upload a file first.</p>
           <button
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate(getDashboardPath())}
             className={`mt-4 px-6 py-2 rounded-lg ${isDarkMode ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gradient-to-r from-blue-600 via-cyan-600 to-emerald-600 hover:shadow-lg'} text-white`}
           >
             Go Back
@@ -173,7 +174,7 @@ export default function ImportedData() {
   return (
     <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
       {/* NAVBAR */}
-      <NavBar title="Imported Data" showBackButton={true} onBackClick={() => navigate('/admin')} />
+      <NavBar title="Imported Data" showBackButton={true} onBackClick={() => navigate(getDashboardPath())} />
 
       {/* MAIN CONTENT */}
       <section className="w-full py-8 px-6">

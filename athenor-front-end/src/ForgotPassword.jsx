@@ -30,13 +30,11 @@ export default function ForgotPassword() {
 
       const data = await response.json();
       setSubmitted(true);
-      setModalTitle("Email Sent");
-      setModalMessage(data.message || "If the email exists, a password reset link has been sent.");
-      setModalType("success");
-      setModalOpen(true);
+      // Don't show modal - just show the inline submitted state with the email icon
     } catch (err) {
+      console.error(err);
       setModalTitle("Error");
-      setModalMessage("Something went wrong. Please try again.");
+      setModalMessage(`Password reset request failed: ${err.message || 'Network error or server is unreachable. Please check your connection and try again.'}`);
       setModalType("error");
       setModalOpen(true);
     } finally {

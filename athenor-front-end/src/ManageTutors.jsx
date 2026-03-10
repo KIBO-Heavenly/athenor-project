@@ -5,6 +5,8 @@ import NavBar from './NavBar';
 import Modal from './Modal';
 import { getUserColor, generateUserColor, BASE_COLORS } from './colorPalette';
 import { API_URL } from './config';
+import api from './api';
+import { getDashboardPath } from './ProtectedRoute';
 
 export default function ManageTutors() {
   const navigate = useNavigate();
@@ -20,22 +22,30 @@ export default function ManageTutors() {
   const [lastNameFirst, setLastNameFirst] = useState(false);
   const [tutorColors, setTutorColors] = useState({}); // Custom tutor colors
   const [colorPickerOpen, setColorPickerOpen] = useState(null); // Track which tutor's color picker is open
+  const [colorPickerTutorName, setColorPickerTutorName] = useState(null); // Track the tutor name for color picker
 
   useEffect(() => {
-    // Load custom tutor colors from localStorage
-    const savedColors = localStorage.getItem('tutorColors');
-    if (savedColors) {
+    // Load custom tutor colors from backend database
+    const loadColors = async () => {
       try {
-        setTutorColors(JSON.parse(savedColors));
+        const response = await api.get('/api/TutorColors');
+        if (response.ok) {
+          const colorsData = await response.json();
+          const colorsMap = {};
+          colorsData.forEach(c => {
+            colorsMap[c.tutorName] = { light: c.colorLight, dark: c.colorDark };
+          });
+          setTutorColors(colorsMap);
+        }
       } catch (err) {
         console.error('Error loading tutor colors:', err);
       }
-    }
+    };
 
-    // Load OA data from backend first, fallback to localStorage
+    // Load OA data from backend database only
     const loadData = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/TutorAvailability`);
+        const response = await api.get('/api/TutorAvailability');
         if (response.ok) {
           const backendData = await response.json();
           const formattedData = backendData.map(tutor => ({
@@ -44,35 +54,19 @@ export default function ManageTutors() {
             id: tutor.id
           }));
           setOaData(formattedData);
-          // Save to localStorage for backwards compatibility
-          localStorage.setItem('oaAvailability', JSON.stringify(formattedData));
-          return;
+        } else {
+          console.log('No tutor availability data found');
         }
       } catch (err) {
         console.error('Error loading from backend:', err);
-      }
-      
-      // Fallback to localStorage
-      const savedData = localStorage.getItem('oaAvailability');
-      if (savedData) {
-        try {
-          const data = JSON.parse(savedData);
-          setOaData(data);
-        } catch (err) {
-          console.error('Error loading OA data:', err);
-          setModalTitle("Error");
-          setModalMessage("Could not load Office Assistant data.");
-          setModalType("error");
-          setModalOpen(true);
-        }
-      } else {
-        setModalTitle("No Data");
-        setModalMessage("No Office Assistant data found. Please upload a Word document first.");
-        setModalType("warning");
+        setModalTitle("Error");
+        setModalMessage("Could not load Office Assistant data.");
+        setModalType("error");
         setModalOpen(true);
       }
     };
 
+    loadColors();
     loadData();
   }, []);
 
@@ -84,17 +78,31 @@ export default function ManageTutors() {
     return getUserColor(tutorName);
   };
 
-  // Save a custom color for a tutor
-  const saveTutorColor = (tutorName, colorIndex) => {
+  // Save a custom color for a tutor to backend database
+  const saveTutorColor = async (tutorName, colorIndex) => {
     const newColor = generateUserColor(colorIndex);
     const updatedColors = { ...tutorColors, [tutorName]: newColor };
     setTutorColors(updatedColors);
-    localStorage.setItem('tutorColors', JSON.stringify(updatedColors));
     setColorPickerOpen(null);
-    setModalTitle("Success");
-    setModalMessage("Color updated successfully!");
-    setModalType("success");
-    setModalOpen(true);
+    
+    // Save to backend database
+    try {
+      await api.post('/api/TutorColors', {
+        tutorName,
+        colorLight: newColor.light,
+        colorDark: newColor.dark
+      });
+      setModalTitle("Success");
+      setModalMessage("Color updated successfully!");
+      setModalType("success");
+      setModalOpen(true);
+    } catch (err) {
+      console.error('Error saving color:', err);
+      setModalTitle("Error");
+      setModalMessage("Failed to save color.");
+      setModalType("error");
+      setModalOpen(true);
+    }
   };
 
   // Color options for the picker
@@ -114,33 +122,30 @@ export default function ManageTutors() {
     const updated = [...oaData];
     updated[editingIndex] = editingData;
     setOaData(updated);
-    localStorage.setItem('oaAvailability', JSON.stringify(updated));
     
-    // Also update in backend if tutor has an ID
+    // Update in backend database
     if (editingData.id) {
       try {
-        await fetch(`${API_URL}/api/TutorAvailability/${editingData.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: editingData.id,
-            tutorName: editingData.tutorName,
-            availabilityJson: JSON.stringify(editingData.availability)
-          })
+        await api.put(`/api/TutorAvailability/${editingData.id}`, {
+          id: editingData.id,
+          tutorName: editingData.tutorName,
+          availabilityJson: JSON.stringify(editingData.availability)
         });
+        setModalTitle("Success");
+        setModalMessage("Office Assistant updated!");
+        setModalType("success");
+        setModalOpen(true);
       } catch (err) {
         console.error('Error updating backend:', err);
+        setModalTitle("Error");
+        setModalMessage("Failed to update Office Assistant.");
+        setModalType("error");
+        setModalOpen(true);
       }
     }
     
     setEditingIndex(null);
     setEditingData(null);
-    setModalTitle("Success");
-    setModalMessage("Office Assistant updated!");
-    setModalType("success");
-    setModalOpen(true);
   };
 
   const handleDeleteTutor = async (index) => {
@@ -148,70 +153,28 @@ export default function ManageTutors() {
     const tutorId = oaData[index].id;
     const updated = oaData.filter((_, i) => i !== index);
     setOaData(updated);
-    localStorage.setItem('oaAvailability', JSON.stringify(updated));
     
-    // Delete from backend
+    // Delete from backend availability database
     if (tutorId) {
       try {
-        await fetch(`${API_URL}/api/TutorAvailability/${tutorId}`, {
-          method: 'DELETE',
-        });
+        await api.delete(`/api/TutorAvailability/${tutorId}`);
       } catch (err) {
         console.error('Error deleting from backend:', err);
       }
     } else {
       // Try deleting by name if no ID
       try {
-        await fetch(`${API_URL}/api/TutorAvailability/name/${encodeURIComponent(tutorName)}`, {
-          method: 'DELETE',
-        });
+        await api.delete(`/api/TutorAvailability/name/${encodeURIComponent(tutorName)}`);
       } catch (err) {
         console.error('Error deleting from backend by name:', err);
       }
     }
-    
-    // Also remove from any active assignments (used in AssignTutors page)
-    // Handle three-section structure: mathCenter, tutoringCommons, writingCenter
-    const existingAssignments = JSON.parse(localStorage.getItem('tutorAssignments') || '{}');
-    
-    // Check if it's the new three-section structure or old single-section
-    const sections = ['mathCenter', 'tutoringCommons', 'writingCenter'];
-    const isNewStructure = sections.some(section => existingAssignments[section]);
-    
-    if (isNewStructure) {
-      // New three-section structure
-      sections.forEach(section => {
-        if (existingAssignments[section]) {
-          Object.keys(existingAssignments[section]).forEach(slot => {
-            Object.keys(existingAssignments[section][slot]).forEach(day => {
-              if (existingAssignments[section][slot][day] === tutorName) {
-                existingAssignments[section][slot][day] = null;
-              }
-            });
-          });
-        }
-      });
-    } else {
-      // Old single-section structure (backwards compatibility)
-      Object.keys(existingAssignments).forEach(slot => {
-        if (typeof existingAssignments[slot] === 'object') {
-          Object.keys(existingAssignments[slot]).forEach(day => {
-            if (existingAssignments[slot][day] === tutorName) {
-              existingAssignments[slot][day] = null;
-            }
-          });
-        }
-      });
-    }
-    localStorage.setItem('tutorAssignments', JSON.stringify(existingAssignments));
 
-    // Also remove from backend schedule database (Master Schedule page)
+    // Remove from backend schedule database (Master Schedule page)
     try {
-      await fetch(`${API_URL}/api/Schedule/tutor-name/${encodeURIComponent(tutorName)}`, {
-        method: 'DELETE',
-      });
+      await api.delete(`/api/Schedule/tutor-name/${encodeURIComponent(tutorName)}`);
     } catch (err) {
-      console.error('Error deleting from backend:', err);
+      console.error('Error deleting schedules from backend:', err);
     }
 
     setModalTitle("Deleted");
@@ -321,7 +284,10 @@ export default function ManageTutors() {
                             style={{
                               backgroundColor: isDarkMode ? userColor.dark : userColor.light
                             }}
-                            onClick={() => setColorPickerOpen(colorPickerOpen === originalIndex ? null : originalIndex)}
+                            onClick={() => {
+                              setColorPickerOpen(colorPickerOpen === originalIndex ? null : originalIndex);
+                              setColorPickerTutorName(tutor.tutorName);
+                            }}
                             title="Click to change color"
                           />
                         </div>
@@ -395,16 +361,6 @@ export default function ManageTutors() {
                       </div>
                     </div>
 
-                    {/* Availability Summary - Removed, just show count */}
-                    {!isEditing && (
-                      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        <p className="font-semibold">
-                          {Object.keys(dataToDisplay.availability).filter(slot => 
-                            Object.values(dataToDisplay.availability[slot]).some(v => v)
-                          ).length} available time slots
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               );
@@ -414,32 +370,35 @@ export default function ManageTutors() {
           {/* Back Button */}
           <div className="mt-8 flex gap-4 justify-end">
             <button
-              onClick={() => navigate('/admin')}
+              onClick={() => navigate(getDashboardPath())}
               className={`px-6 py-3 rounded-lg font-medium transition border ${
                 isDarkMode
                   ? 'border-gray-600 text-gray-300 hover:bg-gray-700/50'
                   : 'border-cyan-400 text-gray-700 hover:bg-white/50'
               }`}
             >
-              Back to Admin
+              Back to Dashboard
             </button>
           </div>
         </div>
       </section>
 
       {/* Color Picker Modal */}
-      {colorPickerOpen !== null && (
+      {colorPickerOpen !== null && colorPickerTutorName && (
         <>
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-            onClick={() => setColorPickerOpen(null)}
+            onClick={() => {
+              setColorPickerOpen(null);
+              setColorPickerTutorName(null);
+            }}
           />
           <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
             <div className={`rounded-2xl shadow-2xl max-w-md w-full p-6 ${
               isDarkMode ? 'bg-gray-800' : 'bg-white'
             }`}>
               <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                Choose Color for {filteredAndSortedData[colorPickerOpen]?.tutorName}
+                Choose Color for {colorPickerTutorName}
               </h3>
               <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 This color will be used across all pages and will be saved for all users.
@@ -448,7 +407,7 @@ export default function ManageTutors() {
                 {colorOptions.map((color, idx) => (
                   <button
                     key={idx}
-                    onClick={() => saveTutorColor(filteredAndSortedData[colorPickerOpen].tutorName, idx)}
+                    onClick={() => saveTutorColor(colorPickerTutorName, idx)}
                     className="w-full aspect-square rounded-lg hover:scale-110 transition-transform shadow-md hover:shadow-xl"
                     style={{
                       backgroundColor: isDarkMode ? color.dark : color.light
@@ -458,7 +417,10 @@ export default function ManageTutors() {
                 ))}
               </div>
               <button
-                onClick={() => setColorPickerOpen(null)}
+                onClick={() => {
+                  setColorPickerOpen(null);
+                  setColorPickerTutorName(null);
+                }}
                 className={`w-full py-2 rounded-lg font-medium transition ${
                   isDarkMode
                     ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'

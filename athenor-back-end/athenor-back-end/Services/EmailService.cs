@@ -21,29 +21,48 @@ namespace AthenorBackEnd.Services
 
         public async Task SendEmailAsync(string to, string subject, string body)
         {
-            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
-            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
-            var smtpUser = _configuration["Email:SmtpUser"] ?? "";
-            var smtpPass = _configuration["Email:SmtpPass"] ?? "";
-            var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@athenor.com";
-            var fromName = _configuration["Email:FromName"] ?? "Athenor";
-
-            using var client = new SmtpClient(smtpHost, smtpPort)
+            try
             {
-                Credentials = new NetworkCredential(smtpUser, smtpPass),
-                EnableSsl = true
-            };
+                var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
+                var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
+                var smtpUser = _configuration["Email:SmtpUser"] ?? "";
+                var smtpPass = _configuration["Email:SmtpPass"] ?? "";
+                var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@athenor.com";
+                var fromName = _configuration["Email:FromName"] ?? "Athenor";
 
-            var mailMessage = new MailMessage
+                // Check if SMTP credentials are configured
+                if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPass))
+                {
+                    Console.WriteLine($"⚠️ WARNING: Email not sent - SMTP credentials not configured in Azure App Settings");
+                    Console.WriteLine($"   To: {to}");
+                    Console.WriteLine($"   Subject: {subject}");
+                    Console.WriteLine($"   Configure Email:SmtpUser and Email:SmtpPass in Azure App Settings");
+                    return; // Fail silently - don't block registration
+                }
+
+                using var client = new SmtpClient(smtpHost, smtpPort)
+                {
+                    Credentials = new NetworkCredential(smtpUser, smtpPass),
+                    EnableSsl = true
+                };
+
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(fromEmail, fromName),
+                    Subject = subject,
+                    Body = body,
+                    IsBodyHtml = true
+                };
+                mailMessage.To.Add(to);
+
+                await client.SendMailAsync(mailMessage);
+                Console.WriteLine($"✅ Email sent successfully to: {to}");
+            }
+            catch (Exception ex)
             {
-                From = new MailAddress(fromEmail, fromName),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true
-            };
-            mailMessage.To.Add(to);
-
-            await client.SendMailAsync(mailMessage);
+                Console.WriteLine($"❌ ERROR sending email to {to}: {ex.Message}");
+                // Fail silently - don't block registration/password reset
+            }
         }
 
         public async Task SendVerificationEmailAsync(string to, string token, string frontendUrl)

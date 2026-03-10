@@ -4,6 +4,7 @@ import { useDarkMode } from './DarkModeContext';
 import Modal from './Modal';
 import NavBar from './NavBar';
 import { API_URL } from './config';
+import api from './api';
 import ParticleBackground from './components/ParticleBackground';
 import { motion } from 'framer-motion';
 
@@ -47,15 +48,18 @@ export default function AdminDashboard() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_URL}/api/dataimport/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await api.upload('/api/dataimport/upload', formData);
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorMessage = 'Failed to upload file';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          errorMessage = `Upload failed with status ${response.status}`;
+        }
         setModalTitle("Upload Error");
-        setModalMessage(errorData.message || 'Failed to upload file');
+        setModalMessage(errorMessage);
         setModalType("error");
         setModalOpen(true);
         setUploading(false);

@@ -17,34 +17,41 @@ import Settings from "./Settings";
 import PublicReviews from "./PublicReviews";
 import SeeReviews from "./SeeReviews";
 import { DarkModeProvider } from "./DarkModeContext";
+import { ProtectedRoute, AdminRoute, GuestRoute } from "./ProtectedRoute";
 
-function App() {
+function App() 
+{
   return (
     <DarkModeProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          {/* Public routes - only accessible when NOT logged in */}
+          <Route path="/" element={<GuestRoute><Login /></GuestRoute>} />
+          <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/tutor-dashboard" element={<AdminDashboard />} />
-          <Route path="/tutor-schedule" element={<TutorSchedule />} />
-          <Route path="/tutor-schedule-upload" element={<TutorScheduleUpload />} />
-          <Route path="/word-document-upload" element={<WordDocumentUpload />} />
-          <Route path="/assign-tutors" element={<AssignTutors />} />
-          <Route path="/master-schedule" element={<MasterSchedule />} />
-          <Route path="/manage-tutors" element={<ManageTutors />} />
-          <Route path="/manage-users" element={<ManageUsers />} />
-          <Route path="/imported-data" element={<ImportedData />} />
-          <Route path="/settings" element={<Settings />} />
-          {/* Public Review Page - No login required */}
+          
+          {/* Protected routes - require authentication */}
+          <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/tutor-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/tutor-schedule" element={<ProtectedRoute><TutorSchedule /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          
+          {/* All authenticated users can access these (Admin & Tutor have same privileges) */}
+          <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/tutor-schedule-upload" element={<ProtectedRoute><TutorScheduleUpload /></ProtectedRoute>} />
+          <Route path="/word-document-upload" element={<ProtectedRoute><WordDocumentUpload /></ProtectedRoute>} />
+          <Route path="/assign-tutors" element={<ProtectedRoute><AssignTutors /></ProtectedRoute>} />
+          <Route path="/master-schedule" element={<ProtectedRoute><MasterSchedule /></ProtectedRoute>} />
+          <Route path="/manage-tutors" element={<ProtectedRoute><ManageTutors /></ProtectedRoute>} />
+          <Route path="/manage-users" element={<ProtectedRoute><ManageUsers /></ProtectedRoute>} />
+          <Route path="/imported-data" element={<ProtectedRoute><ImportedData /></ProtectedRoute>} />
+          <Route path="/see-reviews" element={<ProtectedRoute><SeeReviews /></ProtectedRoute>} />
+          
+          {/* Public Review Pages - No login required */}
           <Route path="/reviews" element={<PublicReviews />} />
           <Route path="/reviews/:tutorId" element={<PublicReviews />} />
-          {/* Admin-only Review Page */}
-          <Route path="/see-reviews" element={<SeeReviews />} />
         </Routes>
       </BrowserRouter>
     </DarkModeProvider>

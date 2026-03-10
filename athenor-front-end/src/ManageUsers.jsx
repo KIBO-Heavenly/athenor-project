@@ -4,6 +4,8 @@ import { useDarkMode } from './DarkModeContext';
 import NavBar from './NavBar';
 import Modal from './Modal';
 import { API_URL } from './config';
+import api from './api';
+import { logout, getUser, getDashboardPath } from './ProtectedRoute';
 import malePfp from './assets/athenor-male-pfp.jpg';
 import femalePfp from './assets/athenor-female-pfp.jpg';
 
@@ -43,7 +45,7 @@ export default function ManageUsers() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/Users`);
+      const response = await api.get('/api/Users');
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
       setUsers(data);
@@ -57,7 +59,7 @@ export default function ManageUsers() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/Users/count`);
+      const response = await api.get('/api/Users/count');
       if (!response.ok) throw new Error('Failed to fetch stats');
       const data = await response.json();
       setStats(data);
@@ -91,18 +93,16 @@ export default function ManageUsers() {
 
     setDeleting(true);
     try {
-      const response = await fetch(`${API_URL}/api/Users/${userToDelete.id}`, {
-        method: 'DELETE',
-      });
+      const response = await api.delete(`/api/Users/${userToDelete.id}`);
 
       const data = await response.json();
 
       if (response.ok) {
         // Check if user deleted themselves (convert both to strings for safe comparison)
-        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-        if (String(currentUser.id) === String(userToDelete.id)) {
-          // User deleted themselves - log out immediately
-          localStorage.removeItem('user');
+        const currentUser = getUser();
+        if (currentUser && String(currentUser.id) === String(userToDelete.id)) {
+          // User deleted themselves - log out immediately using proper logout function
+          logout();
           window.location.href = '/';
           return;
         }
@@ -136,7 +136,7 @@ export default function ManageUsers() {
   if (loading) {
     return (
       <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-        <NavBar title="Manage Users" showBackButton={true} onBackClick={() => navigate('/admin')} />
+        <NavBar title="Manage Users" showBackButton={true} onBackClick={() => navigate(getDashboardPath())} />
         <div className="flex items-center justify-center min-h-[70vh]">
           <p className={`text-xl animate-pulse ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Loading users...</p>
         </div>
@@ -146,7 +146,7 @@ export default function ManageUsers() {
 
   return (
     <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-      <NavBar title="Manage Users" showBackButton={true} onBackClick={() => navigate('/admin')} />
+      <NavBar title="Manage Users" showBackButton={true} onBackClick={() => navigate(getDashboardPath())} />
 
       <section className="w-full py-8 px-6">
         <div className="max-w-6xl mx-auto">

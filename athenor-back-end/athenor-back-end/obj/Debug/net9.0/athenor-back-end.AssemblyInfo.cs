@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("athenor-back-end")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+04174bb0f9e0aba97d1fc7f0411659111064bea0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aae942c7348743e7bc77c94ace4a520ccb729a96")]
 [assembly: System.Reflection.AssemblyProductAttribute("athenor-back-end")]
 [assembly: System.Reflection.AssemblyTitleAttribute("athenor-back-end")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

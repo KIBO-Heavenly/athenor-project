@@ -6,6 +6,8 @@ import Modal from './Modal';
 import mammoth from 'mammoth';
 import { getUserColor } from './colorPalette';
 import { API_URL } from './config';
+import api from './api';
+import { getDashboardPath } from './ProtectedRoute';
 
 export default function WordDocumentUpload() {
   const navigate = useNavigate();
@@ -20,6 +22,37 @@ export default function WordDocumentUpload() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingData, setEditingData] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [tutorColors, setTutorColors] = useState({}); // Custom tutor colors from database
+
+  // Load custom tutor colors from database on mount
+  React.useEffect(() => {
+    loadTutorColors();
+  }, []);
+
+  const loadTutorColors = async () => {
+    try {
+      const response = await api.get('/api/TutorColors');
+      if (response.ok) {
+        const colors = await response.json();
+        const colorsMap = {};
+        colors.forEach(c => {
+          colorsMap[c.tutorName] = { light: c.colorLight, dark: c.colorDark };
+        });
+        console.log('Loaded tutor colors from database:', colorsMap);
+        setTutorColors(colorsMap);
+      }
+    } catch (err) {
+      console.error('Error loading tutor colors:', err);
+    }
+  };
+
+  // Get color for a tutor - use custom color if set, otherwise use default
+  const getTutorColor = (tutorName) => {
+    if (tutorColors[tutorName]) {
+      return tutorColors[tutorName];
+    }
+    return getUserColor(tutorName);
+  };
 
   const timeSlots = [
     '10:00 – 10:30 AM', '10:30 – 11:00 AM', '11:00 – 11:30 AM', '11:30 – 12:00 PM', '12:00 – 12:30 PM',
@@ -300,7 +333,7 @@ export default function WordDocumentUpload() {
   const handleSaveToDatabase = async () => {
     try {
       // First, fetch existing tutors from backend
-      const backendResponse = await fetch(`${API_URL}/api/TutorAvailability`);
+      const backendResponse = await api.get('/api/TutorAvailability');
       let existingBackendData = [];
       if (backendResponse.ok) {
         existingBackendData = await backendResponse.json();
@@ -335,13 +368,7 @@ export default function WordDocumentUpload() {
         availabilityJson: JSON.stringify(tutor.availability)
       }));
 
-      const saveResponse = await fetch(`${API_URL}/api/TutorAvailability/batch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(tutorsToSave)
-      });
+      const saveResponse = await api.post('/api/TutorAvailability/batch', tutorsToSave);
 
       if (!saveResponse.ok) {
         throw new Error('Failed to save to backend');
@@ -372,7 +399,7 @@ export default function WordDocumentUpload() {
   if (uploadMode === 'upload') {
     return (
       <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-        <NavBar title="Upload Word Document" showBackButton={true} onBackClick={() => navigate('/admin')} />
+        <NavBar title="Upload Word Document" showBackButton={true} onBackClick={() => navigate(getDashboardPath())} />
         
         <section className="w-full py-20 px-6">
           <div className="max-w-2xl mx-auto text-center">
@@ -439,7 +466,7 @@ export default function WordDocumentUpload() {
 
   return (
     <div className={isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gradient-to-b from-blue-50 via-cyan-50 to-emerald-50 min-h-screen'}>
-      <NavBar title="Review & Edit Availability" showBackButton={true} onBackClick={() => navigate('/admin')} />
+      <NavBar title="Review & Edit Availability" showBackButton={true} onBackClick={() => navigate(getDashboardPath())} />
 
       <section className="w-full py-8 px-6">
         <div className="max-w-6xl mx-auto">
@@ -466,7 +493,7 @@ export default function WordDocumentUpload() {
 
           <div className="space-y-6">
             {extractedData.map((tutor, index) => {
-              const userColor = getUserColor(tutor.tutorName);
+              const userColor = getTutorColor(tutor.tutorName);
               const isEditing = editingIndex === index;
               const dataToDisplay = isEditing ? editingData : tutor;
 

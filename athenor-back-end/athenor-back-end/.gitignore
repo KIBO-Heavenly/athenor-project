@@ -1,0 +1,42 @@
+# Environment files with secrets
+.env
+.env.local
+.env.production
+
+# Sensitive configuration files
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
+email-settings.json
+!email-settings.example.json
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Build outputs
+bin/
+obj/
+publish/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+
+# Rider
+.idea/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
