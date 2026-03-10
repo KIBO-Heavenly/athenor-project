@@ -156,8 +156,7 @@ https://athenor-backend-c5gkhub7dwdyf8ft.centralus-01.azurewebsites.net/swagger
 
 ### ⚠️ DEFAULT ADMIN CREDENTIALS (CHANGE IMMEDIATELY!)
 ```
-Email: ***REMOVED***
-Password: ***REMOVED***
+[credentials stored in appsettings.json]
 ```
 
 🚨 **THIS IS THE #1 SECURITY RISK!** 🚨  
@@ -187,7 +186,7 @@ FRONTEND_URL = https://kind-smoke-0cd0b391e.3.azurestaticapps.net
 #### 1. Change Admin Password
 ```
 1. Go to: https://kind-smoke-0cd0b391e.3.azurestaticapps.net
-2. Login: ***REMOVED*** / ***REMOVED***
+2. Login: [credentials stored in appsettings.json]
 3. Go to Settings
 4. Change password to something strong (16+ chars, random)
 ```
@@ -458,7 +457,8 @@ az webapp log tail --resource-group athenor-rg --name athenor-backend
 
 ### Test Login (Development)
 ```powershell
-$body = @{email="***REMOVED***"; password="***REMOVED***"} | ConvertTo-Json
+# Use credentials from appsettings.json AdminSettings section
+$body = @{email="YOUR_ADMIN_EMAIL"; password="YOUR_ADMIN_PASSWORD"} | ConvertTo-Json
 Invoke-RestMethod -Uri "https://athenor-backend.../api/Auth/login" -Method POST -ContentType "application/json" -Body $body
 ```
 

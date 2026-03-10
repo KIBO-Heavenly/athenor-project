@@ -251,13 +251,18 @@ using (var scope = app.Services.CreateScope())
     // For SQLite in dev, this creates the database file if it doesn't exist
     context.Database.Migrate();
     
-    // Check if admin exists (***REMOVED***)
-    if (!context.Users.Any(u => u.Email == "***REMOVED***"))
+    // Read admin credentials from configuration
+    var adminEmail = configuration["AdminSettings:Email"];
+    var adminPassword = configuration["AdminSettings:Password"];
+
+    // Seed admin user
+    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword) &&
+        !context.Users.Any(u => u.Email == adminEmail))
     {
         var adminUser = new User
         {
-            Email = "***REMOVED***",
-            PasswordHash = PasswordHelper.HashPassword("***REMOVED***"),
+            Email = adminEmail,
+            PasswordHash = PasswordHelper.HashPassword(adminPassword),
             FullName = "Athenor Admin",
             Role = "Admin",
             IsEmailVerified = true, // Admin is pre-verified
@@ -266,10 +271,10 @@ using (var scope = app.Services.CreateScope())
         context.Users.Add(adminUser);
         context.SaveChanges();
     }
-    else
+    else if (!string.IsNullOrEmpty(adminEmail))
     {
         // Ensure existing admin has a profile picture and correct full name
-        var existingAdmin = context.Users.FirstOrDefault(u => u.Email == "***REMOVED***");
+        var existingAdmin = context.Users.FirstOrDefault(u => u.Email == adminEmail);
         if (existingAdmin != null)
         {
             bool needsSave = false;

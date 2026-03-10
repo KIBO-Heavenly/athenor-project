@@ -817,8 +817,7 @@ public class UsersController : ControllerBase
 
 ### ⚠️ Default Admin Credentials
 ```
-Email: ***REMOVED***
-Password: ***REMOVED***
+[credentials stored in appsettings.json]
 ```
 
 **🚨 CHANGE IMMEDIATELY AFTER FIRST LOGIN! 🚨**

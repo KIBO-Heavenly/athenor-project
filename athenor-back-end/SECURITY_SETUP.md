@@ -121,8 +121,7 @@ dotnet ef database update
 
 ### Admin Account:
 The default admin account will be recreated automatically on startup:
-- Email: `***REMOVED***`
-- Password: `***REMOVED***` (CHANGE THIS IMMEDIATELY!)
+[credentials stored in appsettings.json] (CHANGE THIS IMMEDIATELY!)
 
 ## Troubleshooting
 

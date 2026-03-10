@@ -770,8 +770,7 @@ VITE_API_URL=http://localhost:5000
 
 ### Demo Admin Login
 
-- **Email:** `***REMOVED***`
-- **Password:** `***REMOVED***`
+[credentials stored in appsettings.json]
 
 This account is auto-created and always works.
 
@@ -785,7 +784,7 @@ This account is auto-created and always works.
 | **Default Role** | All new registrations get "Tutor" role |
 | **Email Verification** | Required before login; 24-hour expiry |
 | **Password Reset** | 1-hour expiry |
-| **Admin Protection** | `***REMOVED***` cannot be deleted |
+| **Admin Protection** | The admin email (configured in appsettings.json) cannot be deleted |
 | **Max Per Slot** | Up to 4 tutors per time slot |
 | **Hour Limit** | Warning at 19 hours/week per tutor |
 | **Reviews** | Anonymous; tutors can opt-out |
