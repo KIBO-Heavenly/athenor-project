@@ -296,7 +296,7 @@ export default function ManageUsers() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          {user.email === '***REMOVED***' ? (
+                          {user.role === 'Admin' ? (
                             <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                               Protected
                             </span>

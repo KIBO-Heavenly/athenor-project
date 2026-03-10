@@ -11,10 +11,12 @@ namespace athenor_back_end.Controllers
     public class ReviewsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly string? _adminEmail;
 
-        public ReviewsController(ApplicationDbContext context)
+        public ReviewsController(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _adminEmail = configuration["AdminSettings:Email"];
         }
 
         // GET: api/Reviews/tutors - Get all users available for review (public - no stars shown) - excludes admin
@@ -22,7 +24,7 @@ namespace athenor_back_end.Controllers
         public async Task<IActionResult> GetTutors()
         {
             var tutors = await _context.Users
-                .Where(u => !u.OptOutReviews && u.Email != "***REMOVED***" && u.IsEmailVerified)
+                .Where(u => !u.OptOutReviews && u.Email != _adminEmail && u.IsEmailVerified)
                 .Select(u => new
                 {
                     u.Id,
@@ -34,13 +36,13 @@ namespace athenor_back_end.Controllers
             return Ok(tutors);
         }
 
-        // GET: api/Reviews/all-users - Get all users with review stats - excludes ***REMOVED***
+        // GET: api/Reviews/all-users - Get all users with review stats - excludes admin
         [Authorize]
         [HttpGet("all-users")]
         public async Task<IActionResult> GetAllUsersWithReviews()
         {
             var users = await _context.Users
-                .Where(u => u.Email != "***REMOVED***")
+                .Where(u => u.Email != _adminEmail)
                 .Select(u => new
                 {
                     u.Id,

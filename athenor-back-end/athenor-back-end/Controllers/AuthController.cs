@@ -40,8 +40,9 @@ namespace athenor_back_end.Controllers
         {
             try
             {
-                // Block ***REMOVED*** from registering
-                if (dto.Email.Equals("***REMOVED***", StringComparison.OrdinalIgnoreCase))
+                // Block admin email from registering
+                var adminEmail = _configuration["AdminSettings:Email"];
+                if (!string.IsNullOrEmpty(adminEmail) && dto.Email.Equals(adminEmail, StringComparison.OrdinalIgnoreCase))
                     return BadRequest(new { message = "This email cannot be registered" });
 
                 // Validate university email

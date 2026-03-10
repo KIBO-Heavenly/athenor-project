@@ -11,18 +11,20 @@ namespace athenor_back_end.Controllers
     public class UsersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly string? _adminEmail;
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _adminEmail = configuration["AdminSettings:Email"];
         }
 
-        // GET all users - excludes ***REMOVED***
+        // GET all users - excludes admin
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _context.Users
-                .Where(u => u.Email != "***REMOVED***")
+                .Where(u => u.Email != _adminEmail)
                 .Select(u => new {
                     u.Id,
                     u.Email,
@@ -59,15 +61,15 @@ namespace athenor_back_end.Controllers
             });
         }
 
-        // GET user count (excludes ***REMOVED***)
+        // GET user count (excludes admin)
         [HttpGet("count")]
         public async Task<IActionResult> GetUserCount()
         {
-            var totalUsers = await _context.Users.CountAsync(u => u.Email != "***REMOVED***");
+            var totalUsers = await _context.Users.CountAsync(u => u.Email != _adminEmail);
             var tutors = await _context.Users.CountAsync(u => u.Role == "Tutor");
-            var admins = await _context.Users.CountAsync(u => u.Role == "Admin" && u.Email != "***REMOVED***");
-            var verified = await _context.Users.CountAsync(u => u.IsEmailVerified && u.Email != "***REMOVED***");
-            var unverified = await _context.Users.CountAsync(u => !u.IsEmailVerified && u.Email != "***REMOVED***");
+            var admins = await _context.Users.CountAsync(u => u.Role == "Admin" && u.Email != _adminEmail);
+            var verified = await _context.Users.CountAsync(u => u.IsEmailVerified && u.Email != _adminEmail);
+            var unverified = await _context.Users.CountAsync(u => !u.IsEmailVerified && u.Email != _adminEmail);
 
             return Ok(new { 
                 total = totalUsers, 
